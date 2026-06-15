@@ -207,11 +207,10 @@ export type SalesInvoice = {
 export type KanbanBoard = Record<string, CrmLead[]>
 
 export type LeadStats = {
-  total: number
+  totalLeads: number
   totalAmount: number
-  won: number
-  lost: number
-  wonAmount: number
+  wonCount: number
+  lostCount: number
   conversionRate: number
   byStage: { stage: string; count: number; amount: number }[]
 }

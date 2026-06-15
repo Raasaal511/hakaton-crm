@@ -446,8 +446,12 @@ export function DashboardPage() {
           description={`${organization?.name ?? 'Meridian'} · ${formatDate()}`}
           actions={
             <>
-              <Button variant="secondary" size="sm" iconLeft={<PhoneCall size={13} />}>
+              <Button
+                variant="secondary"
+                size="sm"
+                iconLeft={<PhoneCall size={13} />}
                 onClick={() => setCommunicationChannel('phone')}
+                disabled={!orgId}
               >
                 Звонок
               </Button>
@@ -456,6 +460,7 @@ export function DashboardPage() {
                 size="sm"
                 iconLeft={<Mail size={13} />}
                 onClick={() => setCommunicationChannel('email')}
+                disabled={!orgId}
               >
                 Письмо
               </Button>
@@ -464,6 +469,7 @@ export function DashboardPage() {
                 size="sm"
                 iconLeft={<Plus size={13} />}
                 onClick={() => setLeadFormOpen(true)}
+                disabled={!orgId}
               >
                 Новый лид
               </Button>

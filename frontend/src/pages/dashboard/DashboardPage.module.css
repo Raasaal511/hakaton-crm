@@ -242,14 +242,18 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
+  width: 100%;
   padding: 0.5rem 0.625rem;
   border-radius: var(--radius);
   text-decoration: none;
   font-size: var(--text-sm);
   font-weight: 500;
+  font-family: inherit;
   color: var(--color-text-secondary);
   background: transparent;
   border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
   transition:
     background var(--duration-fast) var(--ease-standard),
     color var(--duration-fast) var(--ease-standard),
