@@ -4,6 +4,7 @@ import { clearUser } from 'shared/api/events/auth'
 import { Button } from 'shared/ui'
 import styles from './Header.module.css'
 
+/** @deprecated Legacy header — use AppLayout+TopBar instead */
 export function Header() {
   const user = userModel.selectors.useUser()
 

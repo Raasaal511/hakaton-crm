@@ -23,6 +23,10 @@ export type UpdateProductDTO = Partial<CreateProductDTO>
 export type AdjustStockDTO = {
   delta: number
   reason?: string
+  warehouseId?: number | null
+  targetWarehouseId?: number | null
+  type?: 'purchase' | 'sale' | 'transfer' | 'write_off' | 'inventory' | 'adjustment'
+  unitCost?: number
 }
 
 export type CreateServiceDTO = {

@@ -1,233 +1,418 @@
-import { useState, useMemo } from 'react'
-import { Plus, Search, Columns, List, Target, Zap } from 'lucide-react'
-import { AppLayout } from 'shared/ui'
+import { useState, useMemo, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  DEMO_LEADS,
-  type CrmLead,
-  type LeadStage,
-  LEAD_STAGE_LABELS,
-  LEAD_STAGE_COLORS,
-  PRIORITY_COLORS,
-  formatRubles,
-} from 'shared/lib/crmDemoData'
+  Plus,
+  Columns,
+  List,
+  Target,
+  CircleDollarSign,
+  Trash2,
+  ArrowRight,
+  TrendingUp,
+  Sparkles,
+} from 'lucide-react'
+import { AppLayout, Button } from 'shared/ui'
+import { PageHeader } from 'shared/ui/PageHeader/PageHeader'
+import { FilterBar } from 'shared/ui/FilterBar/FilterBar'
+import { DataTable, type ColumnDef } from 'shared/ui/DataTable/DataTable'
+import { organizationModel } from 'entities/organization'
+import { crmAPI, type CrmLead } from 'shared/api/requests/crm'
+import { qk } from 'shared/api/queryKeys'
+import { LEAD_STAGE_LABELS, LEAD_STAGE_COLORS, PRIORITY_COLORS, formatRubles } from 'shared/lib/crmDemoData'
+import { LeadForm } from 'features/crm/LeadForm'
 import styles from './LeadsPage.module.css'
 
-const STAGES: LeadStage[] = ['new', 'qualification', 'proposal', 'negotiation', 'won', 'lost']
+function calcLeadScore(lead: CrmLead): number {
+  const probPart = lead.probability * 0.4
+  const amtPart = Math.min((lead.amount / 500_000) * 30, 30)
+  const priorityPart: Record<string, number> = { high: 20, medium: 12, low: 5 }
+  const sourcePart = lead.source ? 10 : 0
+  return Math.round(Math.min(probPart + amtPart + (priorityPart[lead.priority] ?? 10) + sourcePart, 100))
+}
 
-function LeadKanbanCard({ lead }: { lead: CrmLead }) {
-  const priorityColor = PRIORITY_COLORS[lead.priority]
+function scoreColor(score: number): string {
+  if (score >= 70) return '#10b981'
+  if (score >= 45) return '#f59e0b'
+  return '#ef4444'
+}
+
+function AiScoreBadge({ score }: { score: number }) {
+  const [displayed, setDisplayed] = useState(0)
+  const color = scoreColor(score)
+
+  useEffect(() => {
+    let start = 0
+    const step = Math.ceil(score / 20)
+    const timer = setInterval(() => {
+      start += step
+      if (start >= score) {
+        setDisplayed(score)
+        clearInterval(timer)
+      } else {
+        setDisplayed(start)
+      }
+    }, 30)
+    return () => clearInterval(timer)
+  }, [score])
+
   return (
-    <div className={styles.leadCard}>
-      <div className={styles.leadCardTop}>
-        <span className={styles.leadTitle}>{lead.title}</span>
-        <span className={styles.priorityDot} style={{ background: priorityColor }} title={`Приоритет: ${lead.priority}`} />
-      </div>
-      <div className={styles.leadContact}>
-        <span className={styles.contactAvatar}>{lead.contactAvatar}</span>
-        {lead.contactName} · {lead.company}
-      </div>
-      <div className={styles.leadAmount}>{formatRubles(lead.amount)}</div>
-      {lead.tags.length > 0 && (
-        <div className={styles.leadTags}>
-          {lead.tags.map((t) => <span key={t} className={styles.tag}>{t}</span>)}
-        </div>
-      )}
-      <div className={styles.leadCardBottom}>
-        <span className={styles.leadSource}>{lead.source}</span>
-        <span className={styles.probBadge}>{lead.probability}%</span>
-      </div>
-    </div>
+    <span
+      className={styles.aiScoreBadge}
+      style={{ color, background: `color-mix(in srgb, ${color} 12%, var(--color-bg))`, borderColor: `color-mix(in srgb, ${color} 25%, transparent)` }}
+      title={`AI Score: ${score}`}
+    >
+      <Sparkles size={9} />
+      {displayed}
+    </span>
   )
 }
 
-function LeadTableRow({ lead }: { lead: CrmLead }) {
-  const stageColor = LEAD_STAGE_COLORS[lead.stage]
-  const priorityColor = PRIORITY_COLORS[lead.priority]
+type LeadStage = 'new' | 'qualification' | 'proposal' | 'negotiation' | 'won' | 'lost'
+const STAGES: LeadStage[] = ['new', 'qualification', 'proposal', 'negotiation', 'won', 'lost']
 
+const PRIORITY_LABELS: Record<string, string> = {
+  high: 'Высокий',
+  medium: 'Средний',
+  low: 'Низкий',
+}
+
+function KanbanCard({ lead }: { lead: CrmLead }) {
+  const stageColor = LEAD_STAGE_COLORS[lead.stage as keyof typeof LEAD_STAGE_COLORS] ?? '#6b7280'
+  const priorityColor = PRIORITY_COLORS[lead.priority as keyof typeof PRIORITY_COLORS] ?? '#6b7280'
+  const score = calcLeadScore(lead)
   return (
-    <tr>
-      <td>
-        <div style={{ fontWeight: 600, color: 'var(--color-text)', fontSize: '0.875rem' }}>{lead.title}</div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>{lead.company}</div>
-      </td>
-      <td>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8125rem' }}>
-          <span className={styles.contactAvatar} style={{ width: 22, height: 22 }}>{lead.contactAvatar}</span>
-          {lead.contactName}
+    <div className={styles.kanbanCard}>
+      <div className={styles.kanbanCardTop}>
+        <span className={styles.kanbanCardTitle}>{lead.title}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <AiScoreBadge score={score} />
+          <span
+            className={styles.priorityDot}
+            style={{ background: priorityColor }}
+            title={`Приоритет: ${lead.priority}`}
+          />
         </div>
-      </td>
-      <td><span className={styles.amountCell}>{formatRubles(lead.amount)}</span></td>
-      <td>
-        <span
-          className={styles.stageBadge}
-          style={{ color: stageColor, background: `color-mix(in srgb, ${stageColor} 12%, var(--color-bg))` }}
-        >
-          {LEAD_STAGE_LABELS[lead.stage]}
+      </div>
+      {lead.source && (
+        <div className={styles.kanbanCardSource}>
+          <Target size={10} />
+          {lead.source}
+        </div>
+      )}
+      <div className={styles.kanbanCardFooter}>
+        <span className={styles.kanbanCardAmount}>{formatRubles(lead.amount)}</span>
+        <span className={styles.probBadge} style={{ color: stageColor, background: `color-mix(in srgb, ${stageColor} 12%, var(--color-bg))` }}>
+          {lead.probability}%
         </span>
-      </td>
-      <td>
-        <div className={styles.responsibleCell}>
-          <span className={styles.responsibleAvatar}>{lead.responsibleAvatar}</span>
-          {lead.responsible}
-        </div>
-      </td>
-      <td>
-        <span className={styles.priorityBadge} style={{ color: priorityColor }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: priorityColor, display: 'inline-block' }} />
-          {lead.priority === 'high' ? 'Высокий' : lead.priority === 'medium' ? 'Средний' : 'Низкий'}
-        </span>
-      </td>
-      <td>
-        <div className={styles.probCell}>
-          <div className={styles.probTrack}>
-            <div className={styles.probFill} style={{ width: `${lead.probability}%`, background: stageColor }} />
-          </div>
-          <span className={styles.probText}>{lead.probability}%</span>
-        </div>
-      </td>
-    </tr>
+      </div>
+    </div>
   )
 }
 
 export function LeadsPage() {
   const [search, setSearch] = useState('')
   const [view, setView] = useState<'kanban' | 'table'>('kanban')
+  const [stageFilter, setStageFilter] = useState<LeadStage | 'all'>('all')
+  const [formOpen, setFormOpen] = useState(false)
+  const [editLead, setEditLead] = useState<CrmLead | null>(null)
+  const org = organizationModel.selectors.useCurrentOrganization()
+  const queryClient = useQueryClient()
+
+  const { data, isLoading } = useQuery({
+    queryKey: qk.crmLeads(org?.id ?? 0, { limit: 500 }),
+    queryFn: () => crmAPI.getLeads(org!.id, { limit: 500 }),
+    enabled: Boolean(org?.id),
+    staleTime: 30_000,
+  })
+
+  const { data: dealStats } = useQuery({
+    queryKey: qk.crmDealStats(org?.id ?? 0),
+    queryFn: () => crmAPI.getDealStats(org!.id),
+    enabled: Boolean(org?.id),
+    staleTime: 30_000,
+  })
+
+  const { data: dealStages = [] } = useQuery({
+    queryKey: qk.crmDealStages(org?.id ?? 0),
+    queryFn: () => crmAPI.getDealStages(org!.id),
+    enabled: Boolean(org?.id),
+    staleTime: 60_000,
+  })
+
+  const { data: leadSources = [] } = useQuery({
+    queryKey: qk.crmLeadSources(org?.id ?? 0),
+    queryFn: () => crmAPI.getLeadSources(org!.id),
+    enabled: Boolean(org?.id),
+    staleTime: 60_000,
+  })
+
+  const leads = useMemo(() => data?.items ?? [], [data])
 
   const filtered = useMemo(() =>
-    DEMO_LEADS.filter((l) =>
-      !search ||
-      l.title.toLowerCase().includes(search.toLowerCase()) ||
-      l.company.toLowerCase().includes(search.toLowerCase()) ||
-      l.contactName.toLowerCase().includes(search.toLowerCase()),
-    ), [search])
+    leads.filter((l) => {
+      const matchSearch = !search || l.title.toLowerCase().includes(search.toLowerCase())
+      const matchStage = stageFilter === 'all' || l.stage === stageFilter
+      return matchSearch && matchStage
+    }), [leads, search, stageFilter])
 
   const byStage = useMemo(() => {
     const map: Record<LeadStage, CrmLead[]> = {
       new: [], qualification: [], proposal: [], negotiation: [], won: [], lost: [],
     }
-    filtered.forEach((l) => map[l.stage].push(l))
+    filtered.forEach((l) => {
+      const stage = l.stage as LeadStage
+      if (map[stage]) map[stage].push(l)
+    })
     return map
   }, [filtered])
 
   const totalAmount = filtered.reduce((s, l) => s + l.amount, 0)
-  const wonAmount = filtered.filter((l) => l.stage === 'won').reduce((s, l) => s + l.amount, 0)
+
+  const tableData = useMemo(() =>
+    filtered.map((l) => ({ ...l, id: String(l.id) })),
+    [filtered])
+
+  const tableColumns: ColumnDef<(typeof tableData)[0]>[] = [
+    {
+      key: 'title',
+      header: 'Сделка',
+      sortable: true,
+      renderCell: (row) => (
+        <div>
+          <div className={styles.dealTitle}>{row.title}</div>
+          {row.description && (
+            <div className={styles.dealDesc}>{row.description.slice(0, 60)}</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'amount',
+      header: 'Сумма',
+      sortable: true,
+      renderCell: (row) => (
+        <span className={styles.amountCell}>{formatRubles(row.amount)}</span>
+      ),
+    },
+    {
+      key: 'stage',
+      header: 'Этап',
+      renderCell: (row) => {
+        const color = LEAD_STAGE_COLORS[row.stage as keyof typeof LEAD_STAGE_COLORS] ?? '#6b7280'
+        const label = LEAD_STAGE_LABELS[row.stage as keyof typeof LEAD_STAGE_LABELS] ?? row.stage
+        return (
+          <span
+            className={styles.stagePill}
+            style={{ color, background: `color-mix(in srgb, ${color} 12%, var(--color-bg))` }}
+          >
+            {label}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'priority',
+      header: 'Приоритет',
+      renderCell: (row) => {
+        const color = PRIORITY_COLORS[row.priority as keyof typeof PRIORITY_COLORS] ?? '#6b7280'
+        return (
+          <div className={styles.priorityCell}>
+            <span className={styles.priorityDot} style={{ background: color }} />
+            {PRIORITY_LABELS[row.priority] ?? row.priority}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'probability',
+      header: 'Вероятность',
+      sortable: true,
+      renderCell: (row) => {
+        const color = LEAD_STAGE_COLORS[row.stage as keyof typeof LEAD_STAGE_COLORS] ?? '#6b7280'
+        return (
+          <div className={styles.probRow}>
+            <div className={styles.probTrack}>
+              <div className={styles.probFill} style={{ width: `${row.probability}%`, background: color }} />
+            </div>
+            <span className={styles.probPct}>{row.probability}%</span>
+          </div>
+        )
+      },
+    },
+    {
+      key: 'id',
+      header: 'AI Score',
+      renderCell: (row) => {
+        const lead = filtered.find((l) => String(l.id) === row.id)
+        if (!lead) return null
+        return <AiScoreBadge score={calcLeadScore(lead)} />
+      },
+    },
+  ]
+
+  const activeChips = [
+    ...(stageFilter !== 'all' ? [{ id: 'stage', label: 'Этап', value: LEAD_STAGE_LABELS[stageFilter] ?? stageFilter }] : []),
+    ...(search ? [{ id: 'search', label: 'Поиск', value: search }] : []),
+  ]
+
+  const stageTabs = [
+    { id: 'all', label: 'Все этапы', count: filtered.length },
+    ...STAGES.map((s) => ({
+      id: s,
+      label: LEAD_STAGE_LABELS[s],
+      count: byStage[s].length,
+    })),
+  ]
 
   return (
     <AppLayout>
       <div className={styles.page}>
-        <div className={styles.topBar}>
-          <div className={styles.titleGroup}>
-            <h1 className={styles.pageTitle}>Лиды и сделки</h1>
-            <p className={styles.pageSubtitle}>
-              Воронка продаж · {filtered.length} лидов · {formatRubles(totalAmount)} в работе
-            </p>
-          </div>
-          <div className={styles.actions}>
-            <button type="button" className={`${styles.btn} ${styles.btnPrimary}`}>
-              <Plus size={14} />
-              Новый лид
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          title="Лиды и сделки"
+          breadcrumb={[{ label: 'CRM' }]}
+          description={`${isLoading ? '...' : (data?.total ?? 0)} лидов · ${formatRubles(dealStats?.weightedPipeline ?? totalAmount)} weighted pipeline · ${dealStages.length || STAGES.length} этапов`}
+          actions={
+            <>
+              <div className={styles.viewToggle}>
+                <button
+                  type="button"
+                  className={`${styles.viewBtn} ${view === 'kanban' ? styles.viewBtnActive : ''}`}
+                  onClick={() => setView('kanban')}
+                  title="Воронка"
+                >
+                  <Columns size={14} strokeWidth={1.75} />
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.viewBtn} ${view === 'table' ? styles.viewBtnActive : ''}`}
+                  onClick={() => setView('table')}
+                  title="Таблица"
+                >
+                  <List size={14} strokeWidth={1.75} />
+                </button>
+              </div>
+              <Button variant="primary" size="sm" iconLeft={<Plus size={13} />} onClick={() => { setEditLead(null); setFormOpen(true) }}>
+                Новый лид
+              </Button>
+            </>
+          }
+          tabs={view === 'table' ? stageTabs : undefined}
+          activeTab={view === 'table' ? stageFilter : undefined}
+          onTabChange={(id) => setStageFilter(id as LeadStage | 'all')}
+        />
 
-        <div className={styles.body}>
-          <div className={styles.toolbar}>
-            <div className={styles.searchWrap}>
-              <Search size={14} className={styles.searchIcon} />
-              <input
-                className={styles.searchInput}
-                type="text"
-                placeholder="Поиск по лидам..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+        {view === 'table' && (
+          <FilterBar
+            chips={activeChips}
+            onRemoveChip={(id) => {
+              if (id === 'stage') setStageFilter('all')
+              if (id === 'search') setSearch('')
+            }}
+            onClearAll={() => { setStageFilter('all'); setSearch('') }}
+            totalCount={data?.total}
+            filteredCount={filtered.length}
+          >
+            <input
+              type="search"
+              className={styles.searchInput}
+              placeholder="Поиск по лидам..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </FilterBar>
+        )}
+
+        {view === 'kanban' ? (
+          <div className={styles.kanbanWrap}>
+            {/* Stage totals summary bar */}
+            <div className={styles.stageSummary}>
+              <div className={styles.summaryTotal}>
+                <CircleDollarSign size={15} strokeWidth={1.75} />
+                <span>{formatRubles(totalAmount)}</span>
+                <span className={styles.summaryLabel}>в работе</span>
+              </div>
+              <div className={styles.summarySeparator} />
+              <div className={styles.summaryStats}>
+                <TrendingUp size={13} strokeWidth={1.75} />
+                <span>{formatRubles(dealStats?.wonAmount ?? 0)} выиграно</span>
+              </div>
+              <div className={styles.summarySeparator} />
+              <div className={styles.summaryStats}>
+                <Target size={13} strokeWidth={1.75} />
+                <span>{leadSources.length} источников</span>
+              </div>
             </div>
 
-            <div className={styles.viewToggle}>
-              <button
-                type="button"
-                className={`${styles.viewBtn} ${view === 'kanban' ? styles.viewBtnActive : ''}`}
-                onClick={() => setView('kanban')}
-                title="Воронка"
-              >
-                <Columns size={14} />
-              </button>
-              <button
-                type="button"
-                className={`${styles.viewBtn} ${view === 'table' ? styles.viewBtnActive : ''}`}
-                onClick={() => setView('table')}
-                title="Таблица"
-              >
-                <List size={14} />
-              </button>
-            </div>
-          </div>
-
-          {view === 'kanban' ? (
             <div className={styles.kanban}>
               {STAGES.map((stage) => {
-                const leads = byStage[stage]
+                const stageLeads = byStage[stage]
                 const stageColor = LEAD_STAGE_COLORS[stage]
-                const stageSum = leads.reduce((s, l) => s + l.amount, 0)
+                const stageSum = stageLeads.reduce((s, l) => s + l.amount, 0)
                 return (
                   <div key={stage} className={styles.kanbanColumn}>
-                    <div
-                      className={styles.columnHeader}
-                      style={{ '--col-color': stageColor } as React.CSSProperties}
-                    >
-                      <div className={styles.columnTitleGroup}>
+                    <div className={styles.columnHeader} style={{ '--col-color': stageColor } as React.CSSProperties}>
+                      <div className={styles.columnTitleRow}>
+                        <span className={styles.columnDot} style={{ background: stageColor }} />
                         <span className={styles.columnTitle}>{LEAD_STAGE_LABELS[stage]}</span>
-                        <span className={styles.columnCount}>{leads.length}</span>
+                        <span className={styles.columnCount}>{stageLeads.length}</span>
                       </div>
                       {stageSum > 0 && (
                         <span className={styles.columnSum}>{formatRubles(stageSum)}</span>
                       )}
                     </div>
+
                     <div className={styles.columnCards}>
-                      {leads.map((lead) => (
-                        <LeadKanbanCard key={lead.id} lead={lead} />
+                      {stageLeads.map((lead) => (
+                        <KanbanCard key={lead.id} lead={lead} />
                       ))}
-                      {leads.length === 0 && (
-                        <div style={{
-                          padding: '1.5rem',
-                          textAlign: 'center',
-                          color: 'var(--color-text-secondary)',
-                          fontSize: '0.8125rem',
-                          border: '1.5px dashed var(--color-border)',
-                          borderRadius: 10,
-                        }}>
+                      {stageLeads.length === 0 && !isLoading && (
+                        <div className={styles.columnEmpty}>
+                          <ArrowRight size={14} className={styles.columnEmptyIcon} />
                           Нет лидов
                         </div>
                       )}
                     </div>
+
+                    <button type="button" className={styles.addCardBtn}>
+                      <Plus size={13} />
+                      Добавить
+                    </button>
                   </div>
                 )
               })}
             </div>
-          ) : (
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Сделка</th>
-                    <th>Контакт</th>
-                    <th>Сумма</th>
-                    <th>Этап</th>
-                    <th>Ответственный</th>
-                    <th>Приоритет</th>
-                    <th>Вероятность</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((lead) => (
-                    <LeadTableRow key={lead.id} lead={lead} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className={styles.tableWrap}>
+            <DataTable
+              columns={tableColumns}
+              data={tableData}
+              loading={isLoading}
+              bulkActions={[
+                {
+                  id: 'delete',
+                  label: 'Удалить',
+                  icon: <Trash2 size={13} />,
+                  variant: 'danger',
+                  onClick: (ids) => {
+                Promise.all(ids.map((id) => crmAPI.deleteLead(org!.id, Number(id))))
+                  .then(() => {
+                    queryClient.invalidateQueries({ queryKey: ['crm', org?.id, 'leads'] })
+                    queryClient.invalidateQueries({ queryKey: ['crm', org?.id, 'lead-stats'] })
+                  })
+              },
+                },
+              ]}
+            />
+          </div>
+        )}
       </div>
+
+      <LeadForm
+        open={formOpen}
+        onClose={() => { setFormOpen(false); setEditLead(null) }}
+        existing={editLead}
+      />
     </AppLayout>
   )
 }

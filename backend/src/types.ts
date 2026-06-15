@@ -9,6 +9,8 @@ const TYPES = {
   OrganizationService: Symbol.for('OrganizationService'),
   OrganizationRepository: Symbol.for('OrganizationRepository'),
   OrganizationAccessService: Symbol.for('OrganizationAccessService'),
+  RbacService: Symbol.for('RbacService'),
+  AuditService: Symbol.for('AuditService'),
 
   DepartmentController: Symbol.for('DepartmentController'),
   DepartmentService: Symbol.for('DepartmentService'),

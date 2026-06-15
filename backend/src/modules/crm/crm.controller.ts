@@ -2,6 +2,7 @@ import { injectable, inject } from 'inversify'
 import type { FastifyPluginAsync } from 'fastify'
 import { TYPES } from '../../types.js'
 import { CrmService } from './crm.service.js'
+import { RbacService, type CoreCapability } from '../../services/rbac.service.js'
 import { authMiddleware } from '../../middlewares/authMiddleware.js'
 import { BadRequestError } from '../../infra/libs/errors.js'
 import type {
@@ -19,7 +20,14 @@ import type {
 
 @injectable()
 export class CrmController {
-  constructor(@inject(TYPES.CrmService) private crmService: CrmService) {}
+  constructor(
+    @inject(TYPES.CrmService) private crmService: CrmService,
+    @inject(TYPES.RbacService) private rbac: RbacService,
+  ) {}
+
+  private async ensure(req: { user?: { id: number } }, orgId: number, capability: CoreCapability) {
+    await this.rbac.ensureCapability(orgId, req.user!.id, capability)
+  }
 
   // ---------------------------------------------------------------------------
   // Segments
@@ -32,6 +40,7 @@ export class CrmController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.read')
         const segments = await this.crmService.getSegments(orgId)
         return reply.send(segments)
       },
@@ -45,6 +54,7 @@ export class CrmController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
         const segment = await this.crmService.createSegment(orgId, req.body)
         return reply.status(201).send(segment)
       },
@@ -60,6 +70,7 @@ export class CrmController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id сегмента')
+        await this.ensure(req, orgId, 'crm.delete')
         await this.crmService.deleteSegment(orgId, id)
         return reply.status(204).send()
       },
@@ -88,6 +99,7 @@ export class CrmController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.read')
 
         const filter: CrmListFilter = {
           q: req.query.q,
@@ -112,6 +124,7 @@ export class CrmController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
         const contact = await this.crmService.createContact(orgId, req.user!.id, req.body)
         return reply.status(201).send(contact)
       },
@@ -127,6 +140,7 @@ export class CrmController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id контакта')
+        await this.ensure(req, orgId, 'crm.read')
         const contact = await this.crmService.getContactById(orgId, id)
         return reply.send(contact)
       },
@@ -142,6 +156,7 @@ export class CrmController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id контакта')
+        await this.ensure(req, orgId, 'crm.write')
         const contact = await this.crmService.updateContact(orgId, id, req.user!.id, req.body)
         return reply.send(contact)
       },
@@ -157,6 +172,7 @@ export class CrmController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id контакта')
+        await this.ensure(req, orgId, 'crm.delete')
         await this.crmService.deleteContact(orgId, id, req.user!.id)
         return reply.status(204).send()
       },
@@ -184,6 +200,7 @@ export class CrmController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.read')
 
         const filter: CrmListFilter = {
           q: req.query.q,
@@ -207,6 +224,7 @@ export class CrmController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
         const company = await this.crmService.createCompany(orgId, req.user!.id, req.body)
         return reply.status(201).send(company)
       },
@@ -222,6 +240,7 @@ export class CrmController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id компании')
+        await this.ensure(req, orgId, 'crm.read')
         const company = await this.crmService.getCompanyById(orgId, id)
         return reply.send(company)
       },
@@ -237,6 +256,7 @@ export class CrmController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id компании')
+        await this.ensure(req, orgId, 'crm.write')
         const company = await this.crmService.updateCompany(orgId, id, req.user!.id, req.body)
         return reply.send(company)
       },
@@ -252,6 +272,7 @@ export class CrmController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id компании')
+        await this.ensure(req, orgId, 'crm.delete')
         await this.crmService.deleteCompany(orgId, id, req.user!.id)
         return reply.status(204).send()
       },
@@ -281,6 +302,7 @@ export class CrmController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.read')
 
         const filter: LeadListFilter = {
           q: req.query.q,
@@ -306,6 +328,7 @@ export class CrmController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.read')
         const board = await this.crmService.getKanbanBoard(orgId)
         return reply.send(board)
       },
@@ -319,6 +342,7 @@ export class CrmController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.read')
         const stats = await this.crmService.getConversionStats(orgId)
         return reply.send(stats)
       },
@@ -332,6 +356,7 @@ export class CrmController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
         const lead = await this.crmService.createLead(orgId, req.user!.id, req.body)
         return reply.status(201).send(lead)
       },
@@ -347,6 +372,7 @@ export class CrmController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id лида')
+        await this.ensure(req, orgId, 'crm.read')
         const lead = await this.crmService.getLeadById(orgId, id)
         return reply.send(lead)
       },
@@ -362,6 +388,7 @@ export class CrmController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id лида')
+        await this.ensure(req, orgId, 'crm.write')
         const lead = await this.crmService.updateLead(orgId, id, req.user!.id, req.body)
         return reply.send(lead)
       },
@@ -377,6 +404,7 @@ export class CrmController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id лида')
+        await this.ensure(req, orgId, 'crm.write')
         const lead = await this.crmService.moveLead(orgId, id, req.user!.id, req.body)
         return reply.send(lead)
       },
@@ -392,8 +420,244 @@ export class CrmController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id лида')
+        await this.ensure(req, orgId, 'crm.delete')
         await this.crmService.deleteLead(orgId, id, req.user!.id)
         return reply.status(204).send()
+      },
+    )
+  }
+
+  // ---------------------------------------------------------------------------
+  // CRM Core: sources, deals, documents, communications, automation
+  // ---------------------------------------------------------------------------
+
+  getLeadSources: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string } }>(
+      '/crm/lead-sources',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.read')
+        return reply.send(await this.crmService.getLeadSources(orgId))
+      },
+    )
+  }
+
+  createLeadSource: FastifyPluginAsync = async (fastify) => {
+    fastify.post<{ Querystring: { orgId: string }; Body: { name: string; code?: string; color?: string } }>(
+      '/crm/lead-sources',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
+        return reply.status(201).send(await this.crmService.createLeadSource(orgId, req.user!.id, req.body))
+      },
+    )
+  }
+
+  getDealStages: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string } }>(
+      '/crm/deal-stages',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.read')
+        return reply.send(await this.crmService.getDealStages(orgId))
+      },
+    )
+  }
+
+  createDealStage: FastifyPluginAsync = async (fastify) => {
+    fastify.post<{ Querystring: { orgId: string }; Body: { name: string; code?: string; position?: number; probability?: number; color?: string; isWon?: boolean; isLost?: boolean } }>(
+      '/crm/deal-stages',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
+        return reply.status(201).send(await this.crmService.createDealStage(orgId, req.user!.id, req.body))
+      },
+    )
+  }
+
+  getDeals: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string; q?: string; companyId?: string; ownerUserId?: string; limit?: string; offset?: string } }>(
+      '/crm/deals',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.read')
+        return reply.send(await this.crmService.getDeals(orgId, {
+          q: req.query.q,
+          companyId: req.query.companyId ? Number(req.query.companyId) : undefined,
+          ownerUserId: req.query.ownerUserId ? Number(req.query.ownerUserId) : undefined,
+          limit: req.query.limit ? Number(req.query.limit) : 50,
+          offset: req.query.offset ? Number(req.query.offset) : 0,
+        }))
+      },
+    )
+  }
+
+  createDeal: FastifyPluginAsync = async (fastify) => {
+    fastify.post<{ Querystring: { orgId: string }; Body: Parameters<CrmService['createDeal']>[2] }>(
+      '/crm/deals',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
+        return reply.status(201).send(await this.crmService.createDeal(orgId, req.user!.id, req.body))
+      },
+    )
+  }
+
+  getDealStats: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string } }>(
+      '/crm/deals/stats',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.read')
+        return reply.send(await this.crmService.getDealStats(orgId))
+      },
+    )
+  }
+
+  getDocuments: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string }; Params: { type: string; id: string } }>(
+      '/crm/documents/:type/:id',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        const entityId = Number(req.params.id)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        if (!entityId) throw new BadRequestError('Некорректный id сущности')
+        await this.ensure(req, orgId, 'crm.read')
+        return reply.send(await this.crmService.getDocuments(orgId, req.params.type, entityId))
+      },
+    )
+  }
+
+  createDocument: FastifyPluginAsync = async (fastify) => {
+    fastify.post<{ Querystring: { orgId: string }; Body: Parameters<CrmService['createDocument']>[2] }>(
+      '/crm/documents',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
+        return reply.status(201).send(await this.crmService.createDocument(orgId, req.user!.id, req.body))
+      },
+    )
+  }
+
+  getCommunications: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string }; Params: { type: string; id: string } }>(
+      '/crm/communications/:type/:id',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        const entityId = Number(req.params.id)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        if (!entityId) throw new BadRequestError('Некорректный id сущности')
+        await this.ensure(req, orgId, 'crm.read')
+        return reply.send(await this.crmService.getCommunications(orgId, req.params.type, entityId))
+      },
+    )
+  }
+
+  createCommunication: FastifyPluginAsync = async (fastify) => {
+    fastify.post<{ Querystring: { orgId: string }; Body: Parameters<CrmService['createCommunication']>[2] }>(
+      '/crm/communications',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
+        return reply.status(201).send(await this.crmService.createCommunication(orgId, req.user!.id, req.body))
+      },
+    )
+  }
+
+  getAutomationRules: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string } }>(
+      '/crm/automation/rules',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'automation.manage')
+        return reply.send(await this.crmService.getAutomationRules(orgId))
+      },
+    )
+  }
+
+  createAutomationRule: FastifyPluginAsync = async (fastify) => {
+    fastify.post<{ Querystring: { orgId: string }; Body: Parameters<CrmService['createAutomationRule']>[2] }>(
+      '/crm/automation/rules',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'automation.manage')
+        return reply.status(201).send(await this.crmService.createAutomationRule(orgId, req.user!.id, req.body))
+      },
+    )
+  }
+
+  getQuotes: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string } }>(
+      '/crm/sales/quotes',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'sales.read')
+        return reply.send(await this.crmService.getQuotes(orgId))
+      },
+    )
+  }
+
+  createQuote: FastifyPluginAsync = async (fastify) => {
+    fastify.post<{ Querystring: { orgId: string }; Body: Parameters<CrmService['createQuote']>[2] }>(
+      '/crm/sales/quotes',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'sales.write')
+        return reply.status(201).send(await this.crmService.createQuote(orgId, req.user!.id, req.body))
+      },
+    )
+  }
+
+  getInvoices: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string } }>(
+      '/crm/sales/invoices',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'sales.read')
+        return reply.send(await this.crmService.getInvoices(orgId))
+      },
+    )
+  }
+
+  createInvoice: FastifyPluginAsync = async (fastify) => {
+    fastify.post<{ Querystring: { orgId: string }; Body: Parameters<CrmService['createInvoice']>[2] }>(
+      '/crm/sales/invoices',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'sales.write')
+        return reply.status(201).send(await this.crmService.createInvoice(orgId, req.user!.id, req.body))
       },
     )
   }
@@ -416,6 +680,7 @@ export class CrmController {
 
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!entityId) throw new BadRequestError('Некорректный id сущности')
+        await this.ensure(req, orgId, 'crm.read')
         if (!['contact', 'company', 'lead'].includes(entityType)) {
           throw new BadRequestError('Тип сущности должен быть contact, company или lead')
         }

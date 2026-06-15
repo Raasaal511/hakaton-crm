@@ -2,6 +2,7 @@ import { injectable, inject } from 'inversify'
 import type { FastifyPluginAsync } from 'fastify'
 import { TYPES } from '../../types.js'
 import { CatalogService } from './catalog.service.js'
+import { RbacService, type CoreCapability } from '../../services/rbac.service.js'
 import { authMiddleware } from '../../middlewares/authMiddleware.js'
 import { BadRequestError } from '../../infra/libs/errors.js'
 import type {
@@ -17,7 +18,14 @@ import type {
 
 @injectable()
 export class CatalogController {
-  constructor(@inject(TYPES.CatalogService) private catalogService: CatalogService) {}
+  constructor(
+    @inject(TYPES.CatalogService) private catalogService: CatalogService,
+    @inject(TYPES.RbacService) private rbac: RbacService,
+  ) {}
+
+  private async ensure(req: { user?: { id: number } }, orgId: number, capability: CoreCapability) {
+    await this.rbac.ensureCapability(orgId, req.user!.id, capability)
+  }
 
   // ---------------------------------------------------------------------------
   // Categories
@@ -30,6 +38,7 @@ export class CatalogController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'catalog.read')
         const categories = await this.catalogService.getCategories(orgId)
         return reply.send(categories)
       },
@@ -43,6 +52,7 @@ export class CatalogController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'catalog.write')
         const category = await this.catalogService.createCategory(orgId, req.body)
         return reply.status(201).send(category)
       },
@@ -58,6 +68,7 @@ export class CatalogController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id категории')
+        await this.ensure(req, orgId, 'catalog.write')
         const category = await this.catalogService.updateCategory(orgId, id, req.body)
         return reply.send(category)
       },
@@ -73,8 +84,68 @@ export class CatalogController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id категории')
+        await this.ensure(req, orgId, 'catalog.write')
         await this.catalogService.deleteCategory(orgId, id)
         return reply.status(204).send()
+      },
+    )
+  }
+
+  // ---------------------------------------------------------------------------
+  // Warehouses and inventory
+  // ---------------------------------------------------------------------------
+
+  getWarehouses: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string } }>(
+      '/catalog/warehouses',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'catalog.read')
+        return reply.send(await this.catalogService.getWarehouses(orgId))
+      },
+    )
+  }
+
+  createWarehouse: FastifyPluginAsync = async (fastify) => {
+    fastify.post<{ Querystring: { orgId: string }; Body: { name: string; code?: string; address?: string; responsibleUserId?: number | null; active?: boolean } }>(
+      '/catalog/warehouses',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'catalog.inventory')
+        return reply.status(201).send(await this.catalogService.createWarehouse(orgId, req.user!.id, req.body))
+      },
+    )
+  }
+
+  getStockMovements: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string; productId?: string } }>(
+      '/catalog/stock-movements',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'catalog.read')
+        return reply.send(await this.catalogService.getStockMovements(
+          orgId,
+          req.query.productId ? Number(req.query.productId) : undefined,
+        ))
+      },
+    )
+  }
+
+  getInventorySummary: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string } }>(
+      '/catalog/inventory/summary',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'catalog.read')
+        return reply.send(await this.catalogService.getInventorySummary(orgId))
       },
     )
   }
@@ -99,6 +170,7 @@ export class CatalogController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'catalog.read')
 
         const filter: CatalogListFilter = {
           q: req.query.q,
@@ -121,6 +193,7 @@ export class CatalogController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'catalog.write')
         const product = await this.catalogService.createProduct(orgId, req.body)
         return reply.status(201).send(product)
       },
@@ -136,6 +209,7 @@ export class CatalogController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id товара')
+        await this.ensure(req, orgId, 'catalog.read')
         const product = await this.catalogService.getProductById(orgId, id)
         return reply.send(product)
       },
@@ -151,6 +225,7 @@ export class CatalogController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id товара')
+        await this.ensure(req, orgId, 'catalog.write')
         const product = await this.catalogService.updateProduct(orgId, id, req.body)
         return reply.send(product)
       },
@@ -166,6 +241,7 @@ export class CatalogController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id товара')
+        await this.ensure(req, orgId, 'catalog.write')
         await this.catalogService.deleteProduct(orgId, id)
         return reply.status(204).send()
       },
@@ -181,7 +257,8 @@ export class CatalogController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id товара')
-        const product = await this.catalogService.adjustStock(orgId, id, req.body)
+        await this.ensure(req, orgId, 'catalog.inventory')
+        const product = await this.catalogService.adjustStock(orgId, id, req.user!.id, req.body)
         return reply.send(product)
       },
     )
@@ -206,6 +283,7 @@ export class CatalogController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'catalog.read')
 
         const filter: CatalogListFilter = {
           q: req.query.q,
@@ -227,6 +305,7 @@ export class CatalogController {
       async (req, reply) => {
         const orgId = Number(req.query.orgId)
         if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'catalog.write')
         const service = await this.catalogService.createService(orgId, req.body)
         return reply.status(201).send(service)
       },
@@ -242,6 +321,7 @@ export class CatalogController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id услуги')
+        await this.ensure(req, orgId, 'catalog.read')
         const service = await this.catalogService.getServiceById(orgId, id)
         return reply.send(service)
       },
@@ -257,6 +337,7 @@ export class CatalogController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id услуги')
+        await this.ensure(req, orgId, 'catalog.write')
         const service = await this.catalogService.updateService(orgId, id, req.body)
         return reply.send(service)
       },
@@ -272,6 +353,7 @@ export class CatalogController {
         const id = Number(req.params.id)
         if (!orgId) throw new BadRequestError('orgId обязателен')
         if (!id) throw new BadRequestError('Некорректный id услуги')
+        await this.ensure(req, orgId, 'catalog.write')
         await this.catalogService.deleteService(orgId, id)
         return reply.status(204).send()
       },

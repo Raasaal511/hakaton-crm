@@ -1,6 +1,6 @@
 import type { Organization } from "../../infra/database/drizzle/schema.js"
 
-export type OrganizationRole = 'owner' | 'admin' | 'member' | 'viewer'
+export type OrganizationRole = 'owner' | 'admin' | 'manager' | 'employee' | 'member' | 'viewer'
 
 export type CreateOrganizationDTO = Pick<Organization, 'name'>
 export type UpdateOrganizationDTO = Pick<Organization, 'name'>

@@ -56,6 +56,10 @@ const ProfileAppearancePage = lazy(() =>
 const ProfileNotificationsPage = lazy(() =>
   import('pages/profile').then((m) => ({ default: m.ProfileNotificationsPage })),
 )
+const FinancePage = lazy(() => import('pages/stub/StubPage').then((m) => ({ default: m.FinancePage })))
+const ProjectsPage = lazy(() => import('pages/stub/StubPage').then((m) => ({ default: m.ProjectsPage })))
+const AiPage = lazy(() => import('pages/ai/AiPage').then((m) => ({ default: m.AiPage })))
+const ReportsPage = lazy(() => import('pages/stub/StubPage').then((m) => ({ default: m.ReportsPage })))
 
 function RouteFallback() {
   return <RouteFallbackSkeleton />
@@ -97,6 +101,10 @@ export function AppRouter() {
         <Route path="/crm/leads" element={<LeadsPage />} />
         <Route path="/catalog/products" element={<ProductsPage />} />
         <Route path="/catalog/services" element={<ServicesPage />} />
+        <Route path="/finance" element={<FinancePage />} />
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/ai" element={<AiPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

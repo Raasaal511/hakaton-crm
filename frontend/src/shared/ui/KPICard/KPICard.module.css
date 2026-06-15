@@ -1,0 +1,104 @@
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-elevated);
+  border-color: var(--color-border-hover);
+}
+
+/* Top row */
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  line-height: 1.3;
+}
+
+.iconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+/* Value */
+.value {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+/* Delta */
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.delta-up {
+  color: var(--color-success);
+}
+
+.delta-down {
+  color: var(--color-danger);
+}
+
+.delta-neutral {
+  color: var(--color-text-secondary);
+}
+
+.deltaText {
+  line-height: 1;
+}
+
+/* Skeleton */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skelLabel,
+.skelValue,
+.skelDelta {
+  border-radius: var(--radius-xs);
+  background: linear-gradient(90deg, var(--skeleton-from), var(--skeleton-via), var(--skeleton-to));
+  background-size: 200% 100%;
+  animation: shimmer var(--duration-skeleton) linear infinite;
+}
+
+.skelLabel { height: 12px; width: 55%; }
+.skelValue { height: 28px; width: 45%; margin-top: 4px; }
+.skelDelta { height: 10px; width: 35%; }
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

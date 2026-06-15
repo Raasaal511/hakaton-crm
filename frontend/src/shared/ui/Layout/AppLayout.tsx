@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom'
 import { useUnit } from 'effector-react'
 import { useQuery } from '@tanstack/react-query'
 import { Sidebar } from './Sidebar'
+import { TopBar } from './TopBar'
+import { CommandPalette } from 'shared/ui/CommandPalette/CommandPalette'
 import { setFavoritePipelinesForOrg } from 'entities/pipeline/model/favorites'
 import { userModel } from 'entities/user'
 import { organizationModel } from 'entities/organization'
@@ -14,10 +16,13 @@ import { departmentsAPI } from 'shared/api/requests/departments'
 import { pipelinesAPI } from 'shared/api/requests/pipelines'
 import { qk } from 'shared/api/queryKeys'
 import { mediaMaxMobileQuery, useMediaQuery } from 'shared/lib'
+import { useWsConnection } from 'features/realtime'
 import { Menu } from 'lucide-react'
+import { AiCopilot } from 'shared/ui/AiCopilot/AiCopilot'
 import styles from './AppLayout.module.css'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed'
+const COMMAND_PALETTE_KEY = 'commandPaletteOpen'
 
 function readSidebarCollapsed(): boolean {
   try {
@@ -37,6 +42,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isMobileLayout = useMediaQuery(mediaMaxMobileQuery)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed)
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
+  const [commandOpen, setCommandOpen] = useState(false)
   const currentUser = userModel.selectors.useUser()
   const organizations = useUnit(organizationModel.$organizationsStore)
   const currentOrganization = organizationModel.selectors.useCurrentOrganization()
@@ -61,13 +67,19 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [isMobileLayout, mobileDrawerOpen])
 
   useEffect(() => {
-    if (!isMobileLayout || !mobileDrawerOpen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileDrawerOpen(false)
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setCommandOpen((v) => !v)
+      }
+      if (e.key === 'Escape') {
+        setCommandOpen(false)
+        if (isMobileLayout) setMobileDrawerOpen(false)
+      }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [isMobileLayout, mobileDrawerOpen])
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isMobileLayout])
 
   useEffect(() => {
     if (!currentUser) return
@@ -79,7 +91,6 @@ export function AppLayout({ children }: AppLayoutProps) {
     if (!currentUser) return
     const orgId = currentOrganization?.id
     if (!orgId) return
-
     if (orgMembers.length === 0) {
       organizationsAPI.getMembers(orgId).then(setMembers).catch(() => setMembers([]))
     }
@@ -88,17 +99,20 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   }, [currentUser?.id, currentOrganization?.id, orgMembers.length, departments.length])
 
+  useWsConnection(
+    currentOrganization?.id,
+    currentUser ? `${currentUser.firstname} ${currentUser.lastname ?? ''}`.trim() : undefined
+  )
+
   const favoritesQuery = useQuery({
-    queryKey: currentOrganization?.id != null ? qk.favoritePipelines(currentOrganization.id) : ['favorite-pipelines', null],
+    queryKey: currentOrganization?.id != null
+      ? qk.favoritePipelines(currentOrganization.id)
+      : ['favorite-pipelines', null],
     queryFn: ({ signal }) => pipelinesAPI.listFavoritePipelines(currentOrganization!.id, { signal }),
     enabled: Boolean(currentOrganization?.id && currentUser?.id),
     staleTime: 5 * 60_000,
   })
 
-  /**
-   * Зеркалим избранное в effector-стор: его читают сайдбар/страницы без useQuery.
-   * Когда мигрируем эти места на TanStack Query — стор и этот эффект уберём.
-   */
   useEffect(() => {
     if (!currentOrganization?.id) return
     const items = favoritesQuery.data
@@ -114,12 +128,19 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
   }, [sidebarCollapsed])
 
+  const sidebarWidth = isMobileLayout
+    ? '0px'
+    : sidebarCollapsed
+      ? 'var(--sidebar-collapsed-width, 60px)'
+      : 'var(--sidebar-width, 220px)'
+
   const layoutStyle = {
-    '--sidebar-width': isMobileLayout ? '0px' : sidebarCollapsed ? '72px' : '280px',
+    '--active-sidebar-width': sidebarWidth,
   } as CSSProperties
 
   return (
     <div className={styles.layout} style={layoutStyle}>
+      {/* Mobile top bar */}
       <div className={styles.mobileTopBar}>
         {currentUser ? (
           <button
@@ -130,15 +151,16 @@ export function AppLayout({ children }: AppLayoutProps) {
             aria-controls="app-sidebar-nav"
             aria-label="Открыть меню"
           >
-            <Menu size={22} strokeWidth={2} aria-hidden />
+            <Menu size={20} strokeWidth={2} aria-hidden />
           </button>
         ) : (
           <span className={styles.mobileTopBarPlaceholder} />
         )}
-        <span className={styles.mobileTopTitle}>PulsarCRM</span>
+        <span className={styles.mobileTopTitle}>Meridian</span>
         <span className={styles.mobileTopBarPlaceholder} aria-hidden />
       </div>
 
+      {/* Mobile backdrop */}
       {isMobileLayout && mobileDrawerOpen && (
         <button
           type="button"
@@ -148,6 +170,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         />
       )}
 
+      {/* Sidebar */}
       <Sidebar
         id="app-sidebar-nav"
         collapsed={sidebarCollapsed}
@@ -156,7 +179,15 @@ export function AppLayout({ children }: AppLayoutProps) {
         mobileDrawerOpen={mobileDrawerOpen}
         onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
       />
-      <main className={styles.main}>{children}</main>
+
+      {/* Right zone: topbar + content */}
+      <div className={styles.rightZone}>
+        <TopBar onSearchOpen={() => setCommandOpen(true)} />
+        <main className={styles.main}>{children}</main>
+      </div>
+
+      <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
+      {currentUser && <AiCopilot />}
     </div>
   )
 }

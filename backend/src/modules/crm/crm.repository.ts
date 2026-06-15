@@ -5,11 +5,27 @@ import {
   crmContactsSchema,
   crmCompaniesSchema,
   crmLeadsSchema,
+  crmLeadSourcesSchema,
+  crmDealStagesSchema,
+  crmDealsSchema,
+  crmDocumentsSchema,
+  crmCommunicationsSchema,
+  automationRulesSchema,
+  salesQuotesSchema,
+  salesInvoicesSchema,
   crmActivitySchema,
   crmSegmentsSchema,
   CrmContact,
   CrmCompany,
   CrmLead,
+  CrmDeal,
+  CrmDealStage,
+  CrmLeadSource,
+  CrmDocument,
+  CrmCommunication,
+  AutomationRule,
+  SalesQuote,
+  SalesInvoice,
 } from '../../infra/database/drizzle/schema.js'
 import { eq, and, isNull, ilike, desc, count, sql, or } from 'drizzle-orm'
 import type {
@@ -543,6 +559,301 @@ export class CrmRepository {
     const conversionRate = closed > 0 ? Math.round((wonCount / closed) * 1000) / 1000 : 0
 
     return { totalLeads, totalAmount, byStage, wonCount, lostCount, conversionRate }
+  }
+
+  // ---------------------------------------------------------------------------
+  // CRM Core: sources, deals, documents, communications, automation
+  // ---------------------------------------------------------------------------
+
+  async findLeadSources(orgId: number): Promise<CrmLeadSource[]> {
+    return this.db
+      .select()
+      .from(crmLeadSourcesSchema)
+      .where(eq(crmLeadSourcesSchema.organizationId, orgId))
+      .orderBy(crmLeadSourcesSchema.name)
+  }
+
+  async createLeadSource(orgId: number, dto: { name: string; code?: string; color?: string }): Promise<CrmLeadSource> {
+    const [row] = await this.db.insert(crmLeadSourcesSchema).values({
+      organizationId: orgId,
+      name: dto.name,
+      code: dto.code ?? null,
+      color: dto.color ?? null,
+    }).returning()
+    return row!
+  }
+
+  async findDealStages(orgId: number): Promise<CrmDealStage[]> {
+    return this.db
+      .select()
+      .from(crmDealStagesSchema)
+      .where(eq(crmDealStagesSchema.organizationId, orgId))
+      .orderBy(crmDealStagesSchema.position)
+  }
+
+  async createDealStage(orgId: number, dto: {
+    name: string
+    code: string
+    position?: number
+    probability?: number
+    color?: string
+    isWon?: boolean
+    isLost?: boolean
+  }): Promise<CrmDealStage> {
+    const [row] = await this.db.insert(crmDealStagesSchema).values({
+      organizationId: orgId,
+      name: dto.name,
+      code: dto.code,
+      position: dto.position ?? 0,
+      probability: dto.probability ?? 0,
+      color: dto.color ?? null,
+      isWon: dto.isWon ?? false,
+      isLost: dto.isLost ?? false,
+    }).returning()
+    return row!
+  }
+
+  async findDeals(orgId: number, filter: LeadListFilter = {}): Promise<CrmDeal[]> {
+    const conditions = [
+      eq(crmDealsSchema.organizationId, orgId),
+      isNull(crmDealsSchema.deletedAt),
+    ]
+    if (filter.q) {
+      const pattern = `%${filter.q.trim().slice(0, 200).replace(/[%_\\]/g, '')}%`
+      conditions.push(ilike(crmDealsSchema.title, pattern))
+    }
+    if (filter.companyId) conditions.push(eq(crmDealsSchema.companyId, filter.companyId))
+    if (filter.ownerUserId) conditions.push(eq(crmDealsSchema.ownerUserId, filter.ownerUserId))
+
+    return this.db
+      .select()
+      .from(crmDealsSchema)
+      .where(and(...conditions))
+      .orderBy(desc(crmDealsSchema.createdAt))
+      .limit(filter.limit ?? 50)
+      .offset(filter.offset ?? 0)
+  }
+
+  async createDeal(orgId: number, ownerUserId: number, dto: {
+    title: string
+    leadId?: number | null
+    contactId?: number | null
+    companyId?: number | null
+    stageId?: number | null
+    amount?: number
+    currency?: string
+    probability?: number
+    source?: string
+    expectedCloseDate?: string | null
+    nextStep?: string
+    notes?: string
+  }): Promise<CrmDeal> {
+    const [row] = await this.db.insert(crmDealsSchema).values({
+      organizationId: orgId,
+      ownerUserId,
+      title: dto.title,
+      leadId: dto.leadId ?? null,
+      contactId: dto.contactId ?? null,
+      companyId: dto.companyId ?? null,
+      stageId: dto.stageId ?? null,
+      amount: dto.amount ?? 0,
+      currency: dto.currency ?? 'RUB',
+      probability: dto.probability ?? 0,
+      source: dto.source ?? null,
+      expectedCloseDate: dto.expectedCloseDate ? new Date(dto.expectedCloseDate) : null,
+      nextStep: dto.nextStep ?? null,
+      notes: dto.notes ?? null,
+    }).returning()
+    return row!
+  }
+
+  async getDealStats(orgId: number): Promise<{
+    totalDeals: number
+    openAmount: number
+    wonAmount: number
+    weightedPipeline: number
+  }> {
+    const rows = await this.db
+      .select({
+        cnt: count(),
+        openAmount: sql<number>`coalesce(sum(case when ${crmDealsSchema.status} = 'open' then ${crmDealsSchema.amount} else 0 end), 0)::int`,
+        wonAmount: sql<number>`coalesce(sum(case when ${crmDealsSchema.status} = 'won' then ${crmDealsSchema.amount} else 0 end), 0)::int`,
+        weightedPipeline: sql<number>`coalesce(sum((${crmDealsSchema.amount} * ${crmDealsSchema.probability}) / 100), 0)::int`,
+      })
+      .from(crmDealsSchema)
+      .where(and(eq(crmDealsSchema.organizationId, orgId), isNull(crmDealsSchema.deletedAt)))
+
+    return {
+      totalDeals: Number(rows[0]?.cnt ?? 0),
+      openAmount: Number(rows[0]?.openAmount ?? 0),
+      wonAmount: Number(rows[0]?.wonAmount ?? 0),
+      weightedPipeline: Number(rows[0]?.weightedPipeline ?? 0),
+    }
+  }
+
+  async listDocuments(orgId: number, entityType: string, entityId: number): Promise<CrmDocument[]> {
+    return this.db.select().from(crmDocumentsSchema).where(and(
+      eq(crmDocumentsSchema.organizationId, orgId),
+      eq(crmDocumentsSchema.entityType, entityType),
+      eq(crmDocumentsSchema.entityId, entityId),
+    )).orderBy(desc(crmDocumentsSchema.createdAt))
+  }
+
+  async createDocument(orgId: number, userId: number, dto: {
+    entityType: string
+    entityId: number
+    title: string
+    kind?: string
+    fileName?: string
+    templateCode?: string
+    generatedPayload?: Record<string, unknown>
+  }): Promise<CrmDocument> {
+    const [row] = await this.db.insert(crmDocumentsSchema).values({
+      organizationId: orgId,
+      createdByUserId: userId,
+      entityType: dto.entityType,
+      entityId: dto.entityId,
+      title: dto.title,
+      kind: dto.kind ?? 'attachment',
+      fileName: dto.fileName ?? null,
+      templateCode: dto.templateCode ?? null,
+      generatedPayload: dto.generatedPayload ?? {},
+    }).returning()
+    return row!
+  }
+
+  async listCommunications(orgId: number, entityType: string, entityId: number): Promise<CrmCommunication[]> {
+    return this.db.select().from(crmCommunicationsSchema).where(and(
+      eq(crmCommunicationsSchema.organizationId, orgId),
+      eq(crmCommunicationsSchema.entityType, entityType),
+      eq(crmCommunicationsSchema.entityId, entityId),
+    )).orderBy(desc(crmCommunicationsSchema.createdAt))
+  }
+
+  async createCommunication(orgId: number, userId: number, dto: {
+    entityType: string
+    entityId: number
+    channel: string
+    direction?: string
+    subject?: string
+    body?: string
+    status?: string
+  }): Promise<CrmCommunication> {
+    const [row] = await this.db.insert(crmCommunicationsSchema).values({
+      organizationId: orgId,
+      actorUserId: userId,
+      entityType: dto.entityType,
+      entityId: dto.entityId,
+      channel: dto.channel,
+      direction: dto.direction ?? 'outbound',
+      subject: dto.subject ?? null,
+      body: dto.body ?? null,
+      status: dto.status ?? 'draft',
+    }).returning()
+    return row!
+  }
+
+  async listAutomationRules(orgId: number): Promise<AutomationRule[]> {
+    return this.db
+      .select()
+      .from(automationRulesSchema)
+      .where(eq(automationRulesSchema.organizationId, orgId))
+      .orderBy(desc(automationRulesSchema.createdAt))
+  }
+
+  async createAutomationRule(orgId: number, userId: number, dto: {
+    name: string
+    description?: string
+    triggerType: string
+    conditions?: Record<string, unknown>
+    actions?: Record<string, unknown>[]
+    active?: boolean
+  }): Promise<AutomationRule> {
+    const [row] = await this.db.insert(automationRulesSchema).values({
+      organizationId: orgId,
+      createdByUserId: userId,
+      name: dto.name,
+      description: dto.description ?? null,
+      triggerType: dto.triggerType,
+      conditions: dto.conditions ?? {},
+      actions: dto.actions ?? [],
+      active: dto.active ?? true,
+    }).returning()
+    return row!
+  }
+
+  async listQuotes(orgId: number): Promise<SalesQuote[]> {
+    return this.db
+      .select()
+      .from(salesQuotesSchema)
+      .where(eq(salesQuotesSchema.organizationId, orgId))
+      .orderBy(desc(salesQuotesSchema.createdAt))
+      .limit(100)
+  }
+
+  async createQuote(orgId: number, userId: number, dto: {
+    dealId?: number | null
+    companyId?: number | null
+    contactId?: number | null
+    number: string
+    status?: string
+    subtotal?: number
+    discount?: number
+    total?: number
+    currency?: string
+    validUntil?: string | null
+  }): Promise<SalesQuote> {
+    const [row] = await this.db.insert(salesQuotesSchema).values({
+      organizationId: orgId,
+      createdByUserId: userId,
+      dealId: dto.dealId ?? null,
+      companyId: dto.companyId ?? null,
+      contactId: dto.contactId ?? null,
+      number: dto.number,
+      status: dto.status ?? 'draft',
+      subtotal: dto.subtotal ?? 0,
+      discount: dto.discount ?? 0,
+      total: dto.total ?? dto.subtotal ?? 0,
+      currency: dto.currency ?? 'RUB',
+      validUntil: dto.validUntil ? new Date(dto.validUntil) : null,
+    }).returning()
+    return row!
+  }
+
+  async listInvoices(orgId: number): Promise<SalesInvoice[]> {
+    return this.db
+      .select()
+      .from(salesInvoicesSchema)
+      .where(eq(salesInvoicesSchema.organizationId, orgId))
+      .orderBy(desc(salesInvoicesSchema.createdAt))
+      .limit(100)
+  }
+
+  async createInvoice(orgId: number, userId: number, dto: {
+    dealId?: number | null
+    quoteId?: number | null
+    number: string
+    status?: string
+    total?: number
+    paidAmount?: number
+    currency?: string
+    issuedAt?: string | null
+    dueAt?: string | null
+  }): Promise<SalesInvoice> {
+    const [row] = await this.db.insert(salesInvoicesSchema).values({
+      organizationId: orgId,
+      createdByUserId: userId,
+      dealId: dto.dealId ?? null,
+      quoteId: dto.quoteId ?? null,
+      number: dto.number,
+      status: dto.status ?? 'draft',
+      total: dto.total ?? 0,
+      paidAmount: dto.paidAmount ?? 0,
+      currency: dto.currency ?? 'RUB',
+      issuedAt: dto.issuedAt ? new Date(dto.issuedAt) : null,
+      dueAt: dto.dueAt ? new Date(dto.dueAt) : null,
+    }).returning()
+    return row!
   }
 
   // ---------------------------------------------------------------------------

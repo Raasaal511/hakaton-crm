@@ -21,6 +21,8 @@ import { MAX_TASK_ATTACHMENT_BYTES } from '../infra/libs/taskAttachmentValidatio
 import { API_VERSION } from '../infra/libs/apiVersion.js'
 import { CrmController } from '../modules/crm/crm.controller.js'
 import { CatalogController } from '../modules/catalog/catalog.controller.js'
+import fastifyWebsocket from '@fastify/websocket'
+import { registerWsRoutes } from '../realtime/ws.server.js'
 
 export interface IServer {
   start(): Promise<void>
@@ -240,6 +242,23 @@ export class Server implements IServer {
         await instance.register(this._crm.updateLead)
         await instance.register(this._crm.moveLead)
         await instance.register(this._crm.deleteLead)
+        await instance.register(this._crm.getLeadSources)
+        await instance.register(this._crm.createLeadSource)
+        await instance.register(this._crm.getDealStages)
+        await instance.register(this._crm.createDealStage)
+        await instance.register(this._crm.getDeals)
+        await instance.register(this._crm.createDeal)
+        await instance.register(this._crm.getDealStats)
+        await instance.register(this._crm.getDocuments)
+        await instance.register(this._crm.createDocument)
+        await instance.register(this._crm.getCommunications)
+        await instance.register(this._crm.createCommunication)
+        await instance.register(this._crm.getAutomationRules)
+        await instance.register(this._crm.createAutomationRule)
+        await instance.register(this._crm.getQuotes)
+        await instance.register(this._crm.createQuote)
+        await instance.register(this._crm.getInvoices)
+        await instance.register(this._crm.createInvoice)
         await instance.register(this._crm.getActivity)
 
         // Catalog
@@ -247,6 +266,10 @@ export class Server implements IServer {
         await instance.register(this._catalog.createCategory)
         await instance.register(this._catalog.updateCategory)
         await instance.register(this._catalog.deleteCategory)
+        await instance.register(this._catalog.getWarehouses)
+        await instance.register(this._catalog.createWarehouse)
+        await instance.register(this._catalog.getStockMovements)
+        await instance.register(this._catalog.getInventorySummary)
         await instance.register(this._catalog.getProducts)
         await instance.register(this._catalog.createProduct)
         await instance.register(this._catalog.getProductById)
@@ -262,6 +285,9 @@ export class Server implements IServer {
       },
       { prefix: `/${serverConfig.apiPrefix}` }
     )
+
+    await server.register(fastifyWebsocket)
+    await server.register(registerWsRoutes)
 
     try {
       await server.listen({ port: serverConfig.port, host: serverConfig.host })

@@ -1,10 +1,21 @@
 import { useState, useMemo } from 'react'
-import { Plus, Search, Download, Building2, TrendingUp, Users } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Plus, Search, Download, Building2, Users, Loader2 } from 'lucide-react'
 import { AppLayout } from 'shared/ui'
-import { DEMO_COMPANIES, type CrmCompany, formatRubles } from 'shared/lib/crmDemoData'
+import { PageHeader } from 'shared/ui/PageHeader/PageHeader'
+import { formatRubles } from 'shared/lib/crmDemoData'
+import { crmAPI, type CrmCompany } from 'shared/api/requests/crm'
+import { qk } from 'shared/api/queryKeys'
+import { organizationModel } from 'entities/organization'
+import { CompanyForm } from 'features/crm/CompanyForm'
 import styles from './CompaniesPage.module.css'
 
-const STATUS_LABELS = { active: 'Активная', inactive: 'Неактивная', prospect: 'Перспективная' }
+const STATUS_LABELS: Record<string, string> = {
+  active: 'Активная',
+  inactive: 'Неактивная',
+  prospect: 'Перспективная',
+}
+
 const AVATAR_COLORS = ['#4361ee', '#7c3aed', '#0f766e', '#dc2626', '#d97706', '#0369a1', '#1a7f37', '#9d174d']
 
 function getAvatarColor(name: string) {
@@ -13,7 +24,11 @@ function getAvatarColor(name: string) {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
 }
 
-function CompanyRow({ company }: { company: CrmCompany }) {
+function getInitials(name: string) {
+  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+}
+
+function CompanyRow({ company, onDelete }: { company: CrmCompany; onDelete: (id: number) => void }) {
   const color = getAvatarColor(company.name)
   const statusCls =
     company.status === 'active' ? styles.statusActive
@@ -25,48 +40,41 @@ function CompanyRow({ company }: { company: CrmCompany }) {
       <td>
         <div className={styles.companyCell}>
           <div className={styles.companyAvatar} style={{ background: color }}>
-            {company.avatar}
+            {getInitials(company.name)}
           </div>
           <div>
             <div className={styles.companyName}>{company.name}</div>
-            <div className={styles.companyCity}>{company.city}</div>
+            <div className={styles.companyCity}>{company.city ?? '—'}</div>
           </div>
         </div>
       </td>
       <td>
-        <span className={styles.industry}>{company.industry}</span>
+        <span className={styles.industry}>{company.industry ?? '—'}</span>
       </td>
       <td>
         <span className={styles.employees}>
           <Users size={12} style={{ opacity: 0.6 }} />
-          {company.employees.toLocaleString('ru-RU')}
+          {company.employeesCount != null ? company.employeesCount.toLocaleString('ru-RU') : '—'}
         </span>
       </td>
       <td>
-        <div className={styles.dealsCell}>
-          <span className={styles.dealsCount}>{company.dealsCount}</span>
-          {company.totalDeals > 0 && (
-            <span className={styles.dealsSum}>{formatRubles(company.totalDeals)}</span>
-          )}
-        </div>
+        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>—</span>
       </td>
       <td>
-        <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-          {company.manager}
+        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+          {company.email ?? '—'}
         </span>
       </td>
       <td>
         <span className={`${styles.statusBadge} ${statusCls}`}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', display: 'inline-block' }} />
-          {STATUS_LABELS[company.status]}
+          {STATUS_LABELS[company.status] ?? company.status}
         </span>
       </td>
       <td>
-        {company.revenue > 0 ? (
-          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>
-            {formatRubles(company.revenue)}
-          </span>
-        ) : '—'}
+        {company.annualRevenue != null && company.annualRevenue > 0
+          ? <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500 }}>{formatRubles(company.annualRevenue)}</span>
+          : '—'}
       </td>
     </tr>
   )
@@ -75,63 +83,76 @@ function CompanyRow({ company }: { company: CrmCompany }) {
 export function CompaniesPage() {
   const [search, setSearch] = useState('')
   const [industryFilter, setIndustryFilter] = useState<string>('all')
+  const [formOpen, setFormOpen] = useState(false)
+  const [editCompany, setEditCompany] = useState<CrmCompany | null>(null)
+  const org = organizationModel.selectors.useCurrentOrganization()
+  const queryClient = useQueryClient()
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: qk.crmCompanies(org?.id ?? 0, { q: search, limit: 200 }),
+    queryFn: () => crmAPI.getCompanies(org!.id, { q: search || undefined, limit: 200 }),
+    enabled: Boolean(org?.id),
+    staleTime: 30_000,
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => crmAPI.deleteCompany(org!.id, id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.crmCompanies(org?.id ?? 0) }),
+  })
+
+  const companies = useMemo(() => data?.items ?? [], [data])
 
   const industries = useMemo(
-    () => ['all', ...Array.from(new Set(DEMO_COMPANIES.map((c) => c.industry)))],
-    [],
+    () => ['all', ...Array.from(new Set(companies.map((c) => c.industry).filter(Boolean) as string[]))],
+    [companies],
   )
 
   const filtered = useMemo(() =>
-    DEMO_COMPANIES.filter((c) => {
+    companies.filter((c) => {
       const matchSearch = !search ||
         c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.industry.toLowerCase().includes(search.toLowerCase()) ||
-        c.city.toLowerCase().includes(search.toLowerCase())
+        (c.industry ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.city ?? '').toLowerCase().includes(search.toLowerCase())
       const matchIndustry = industryFilter === 'all' || c.industry === industryFilter
       return matchSearch && matchIndustry
-    }), [search, industryFilter])
+    }), [companies, search, industryFilter])
 
-  const totalRevenue = DEMO_COMPANIES.reduce((s, c) => s + c.revenue, 0)
-  const totalDeals = DEMO_COMPANIES.reduce((s, c) => s + c.totalDeals, 0)
-  const activeCount = DEMO_COMPANIES.filter((c) => c.status === 'active').length
+  const activeCount = filtered.filter((c) => c.status === 'active').length
+  const totalRevenue = filtered.reduce((s, c) => s + (c.annualRevenue ?? 0), 0)
 
   return (
     <AppLayout>
       <div className={styles.page}>
-        <div className={styles.topBar}>
-          <div className={styles.titleGroup}>
-            <h1 className={styles.pageTitle}>Компании</h1>
-            <p className={styles.pageSubtitle}>
-              Клиентская база · {DEMO_COMPANIES.length} компаний
-            </p>
-          </div>
-          <div className={styles.actions}>
-            <button type="button" className={styles.btn}>
-              <Download size={14} />
-              Экспорт
-            </button>
-            <button type="button" className={`${styles.btn} ${styles.btnPrimary}`}>
+        <PageHeader
+          title="Компании"
+          breadcrumb={[{ label: 'CRM' }]}
+          description={`${isLoading ? '...' : (data?.total ?? 0)} компаний в базе`}
+          actions={
+            <>
+              <button type="button" className={styles.btn}>
+                <Download size={14} />
+                Экспорт
+              </button>
+            <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => { setEditCompany(null); setFormOpen(true) }}>
               <Plus size={14} />
               Новая компания
             </button>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         <div className={styles.body}>
           <div className={styles.statsRow}>
             <div className={styles.stat}>
-              <span className={styles.statValue}>{DEMO_COMPANIES.length}</span>
+              <span className={styles.statValue}>
+                {isLoading ? <Loader2 size={14} className={styles.spin} /> : (data?.total ?? 0)}
+              </span>
               <span className={styles.statLabel}>Всего компаний</span>
             </div>
             <div className={styles.statDivider} />
             <div className={styles.stat}>
               <span className={styles.statValue}>{activeCount}</span>
               <span className={styles.statLabel}>Активных</span>
-            </div>
-            <div className={styles.statDivider} />
-            <div className={styles.stat}>
-              <span className={styles.statValue}>{formatRubles(totalDeals)}</span>
-              <span className={styles.statLabel}>Сумма сделок</span>
             </div>
             <div className={styles.statDivider} />
             <div className={styles.stat}>
@@ -166,13 +187,37 @@ export function CompaniesPage() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {isError && (
             <div className={styles.empty}>
               <Building2 size={40} strokeWidth={1.5} />
-              <h3 className={styles.emptyTitle}>Компании не найдены</h3>
-              <p className={styles.emptyDesc}>Попробуйте изменить критерии поиска</p>
+              <h3 className={styles.emptyTitle}>Ошибка загрузки</h3>
+              <p className={styles.emptyDesc}>Не удалось получить данные. Проверьте подключение к серверу.</p>
             </div>
-          ) : (
+          )}
+
+          {!isError && isLoading && (
+            <div className={styles.loadingWrap}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={styles.skeletonRow} />
+              ))}
+            </div>
+          )}
+
+          {!isError && !isLoading && filtered.length === 0 && (
+            <div className={styles.empty}>
+              <Building2 size={40} strokeWidth={1.5} />
+              <h3 className={styles.emptyTitle}>
+                {search || industryFilter !== 'all' ? 'Компании не найдены' : 'Нет компаний'}
+              </h3>
+              <p className={styles.emptyDesc}>
+                {search || industryFilter !== 'all'
+                  ? 'Попробуйте изменить критерии поиска'
+                  : 'Добавьте первую компанию, нажав «Новая компания»'}
+              </p>
+            </div>
+          )}
+
+          {!isError && !isLoading && filtered.length > 0 && (
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
@@ -181,14 +226,14 @@ export function CompaniesPage() {
                     <th>Отрасль</th>
                     <th>Сотрудники</th>
                     <th>Сделки</th>
-                    <th>Менеджер</th>
+                    <th>Email</th>
                     <th>Статус</th>
                     <th>Выручка</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((c) => (
-                    <CompanyRow key={c.id} company={c} />
+                    <CompanyRow key={c.id} company={c} onDelete={(id) => deleteMutation.mutate(id)} />
                   ))}
                 </tbody>
               </table>
@@ -196,6 +241,11 @@ export function CompaniesPage() {
           )}
         </div>
       </div>
+      <CompanyForm
+        open={formOpen}
+        onClose={() => { setFormOpen(false); setEditCompany(null) }}
+        existing={editCompany}
+      />
     </AppLayout>
   )
 }

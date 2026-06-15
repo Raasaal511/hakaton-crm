@@ -8,7 +8,7 @@ import type { OrganizationAccessService } from "./organization-access.service.js
 import type { IDepartmentRepository } from "../entities/department/index.js";
 import { Organization } from "../infra/database/drizzle/schema.js";
 
-const ORGANIZATION_ROLES: OrganizationRole[] = ['owner', 'admin', 'member', 'viewer']
+const ORGANIZATION_ROLES: OrganizationRole[] = ['owner', 'admin', 'manager', 'employee', 'member', 'viewer']
 
 @injectable()
 export class OrganizationService {

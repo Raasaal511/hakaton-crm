@@ -422,7 +422,7 @@ export function TaskPage() {
 
   /** Заголовок вкладки: название задачи (включая то, что в поле имени до сохранения). */
   useEffect(() => {
-    const appTitle = 'Rasl Tasks'
+    const appTitle = 'Meridian'
 
     const restoreTitle = () => {
       document.title = appTitle

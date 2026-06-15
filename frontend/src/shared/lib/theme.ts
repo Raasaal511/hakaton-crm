@@ -1,10 +1,10 @@
 export type ThemePreference = 'light' | 'dark' | 'system'
 export type ResolvedTheme = 'light' | 'dark'
 
-export const THEME_STORAGE_KEY = 'rasl_theme'
+export const THEME_STORAGE_KEY = 'crm_theme'
 
-export const THEME_COLOR_LIGHT = '#4361ee'
-export const THEME_COLOR_DARK = '#161b22'
+export const THEME_COLOR_LIGHT = '#7c3aed'
+export const THEME_COLOR_DARK = '#0a0f1e'
 
 const VALID_PREFERENCES: ThemePreference[] = ['light', 'dark', 'system']
 

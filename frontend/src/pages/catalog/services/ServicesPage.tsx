@@ -1,146 +1,270 @@
 import { useState, useMemo } from 'react'
-import { Plus, Search, LayoutGrid, List, Briefcase, Clock, Users } from 'lucide-react'
-import { AppLayout } from 'shared/ui'
-import { DEMO_SERVICES, type CrmService, type ServiceCategory, formatRubles } from 'shared/lib/crmDemoData'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Plus, Briefcase, List, LayoutGrid, Clock, Trash2 } from 'lucide-react'
+import { AppLayout, Button } from 'shared/ui'
+import { PageHeader } from 'shared/ui/PageHeader/PageHeader'
+import { FilterBar } from 'shared/ui/FilterBar/FilterBar'
+import { DataTable, type ColumnDef } from 'shared/ui/DataTable/DataTable'
+import { formatRubles } from 'shared/lib/crmDemoData'
+import { organizationModel } from 'entities/organization'
+import { catalogAPI, type CatalogService } from 'shared/api/requests/catalog'
+import { qk } from 'shared/api/queryKeys'
 import styles from './ServicesPage.module.css'
 
-const CATEGORY_LABELS: Record<ServiceCategory, string> = {
-  consulting: 'Консалтинг',
-  support: 'Поддержка',
-  training: 'Обучение',
-  development: 'Разработка',
+const SERVICE_COLORS = ['#7c3aed', '#0f766e', '#0369a1', '#d97706', '#dc2626', '#0ea5e9']
+
+type ServiceRow = CatalogService & { id: string; numericId: number }
+
+function adaptRow(s: CatalogService): ServiceRow {
+  return { ...s, id: String(s.id), numericId: s.id }
 }
 
-function ServiceCard({ service }: { service: CrmService }) {
+function ServiceGridCard({ service }: { service: CatalogService }) {
+  const color = SERVICE_COLORS[service.id % SERVICE_COLORS.length]
   return (
-    <div className={styles.serviceCard}>
-      <div className={styles.serviceCardHeader}>
-        <div className={styles.serviceIcon} style={{ background: service.color }}>
-          <Briefcase size={18} color="#fff" />
+    <div className={styles.gridCard}>
+      <div className={styles.gridCardHeader}>
+        <div className={styles.serviceIcon} style={{ background: color }}>
+          <Briefcase size={18} color="#fff" strokeWidth={1.5} />
         </div>
-        <span className={styles.catBadge} style={{ color: service.color, background: `color-mix(in srgb, ${service.color} 12%, var(--color-bg))` }}>
-          {CATEGORY_LABELS[service.category]}
-        </span>
+        {service.category && (
+          <span className={styles.catPill} style={{ color, background: `color-mix(in srgb, ${color} 12%, var(--color-bg))` }}>
+            {service.category}
+          </span>
+        )}
       </div>
-      <div className={styles.serviceName}>{service.name}</div>
-      <div className={styles.serviceDesc}>{service.description}</div>
-      <div className={styles.serviceFooter}>
-        <div className={styles.servicePrice}>{formatRubles(service.price)} <span className={styles.priceUnit}>/ {service.unit}</span></div>
-        <div className={styles.serviceMeta}>
-          {service.duration && (
-            <span className={styles.metaItem}><Clock size={11} />{service.duration}</span>
-          )}
-          <span className={styles.metaItem}><Users size={11} />{service.executors.length} исп.</span>
+      <div className={styles.gridCardName}>{service.name}</div>
+      <div className={styles.gridCardDesc}>{service.description}</div>
+      <div className={styles.gridCardFooter}>
+        <div className={styles.gridCardPrice}>
+          {formatRubles(service.price)}
+          <span className={styles.gridCardUnit}> / {service.unit}</span>
         </div>
+        {service.durationHours && (
+          <span className={styles.durationPill}>
+            <Clock size={10} />
+            {service.durationHours} ч
+          </span>
+        )}
       </div>
     </div>
   )
 }
 
-function ServiceRow({ service }: { service: CrmService }) {
-  return (
-    <tr>
-      <td>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: service.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Briefcase size={14} color="#fff" />
-          </div>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{service.name}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{service.description.slice(0, 60)}...</div>
-          </div>
-        </div>
-      </td>
-      <td>
-        <span style={{ fontSize: '0.8125rem', color: service.color, background: `color-mix(in srgb, ${service.color} 12%, var(--color-bg))`, padding: '0.15rem 0.45rem', borderRadius: 4, fontWeight: 600 }}>
-          {CATEGORY_LABELS[service.category]}
-        </span>
-      </td>
-      <td>
-        <span style={{ fontWeight: 600, fontSize: '0.9375rem' }}>{formatRubles(service.price)}</span>
-        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginLeft: '0.25rem' }}>/ {service.unit}</span>
-      </td>
-      <td>
-        {service.duration ? (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-            <Clock size={12} />{service.duration}
-          </span>
-        ) : '—'}
-      </td>
-      <td>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-          <Users size={12} />{service.executors}
-        </span>
-      </td>
-    </tr>
-  )
-}
-
 export function ServicesPage() {
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState<ServiceCategory | 'all'>('all')
-  const [view, setView] = useState<'grid' | 'table'>('grid')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [view, setView] = useState<'grid' | 'table'>('table')
+  const org = organizationModel.selectors.useCurrentOrganization()
+  const queryClient = useQueryClient()
+
+  const { data: servicesData, isLoading } = useQuery({
+    queryKey: qk.catalogServices(org?.id ?? 0, { limit: 200 }),
+    queryFn: () => catalogAPI.getServices(org!.id, { limit: 200 }),
+    enabled: Boolean(org?.id),
+    staleTime: 30_000,
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => catalogAPI.deleteService(org!.id, id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['catalog', org?.id, 'services'] }),
+  })
+
+  const services = useMemo(() => servicesData?.items ?? [], [servicesData])
+
+  const categories = useMemo(
+    () => Array.from(new Set(services.map((s) => s.category).filter(Boolean) as string[])),
+    [services],
+  )
 
   const filtered = useMemo(() =>
-    DEMO_SERVICES.filter((s) => {
-      const matchSearch = !search ||
-        s.name.toLowerCase().includes(search.toLowerCase()) ||
-        s.description.toLowerCase().includes(search.toLowerCase())
-      const matchCat = category === 'all' || s.category === category
+    services.filter((s) => {
+      const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase())
+      const matchCat = categoryFilter === 'all' || s.category === categoryFilter
       return matchSearch && matchCat
-    }), [search, category])
+    }), [services, search, categoryFilter])
+
+  const tableData: ServiceRow[] = useMemo(() => filtered.map(adaptRow), [filtered])
+
+  const columns: ColumnDef<ServiceRow>[] = [
+    {
+      key: 'name',
+      header: 'Услуга',
+      sortable: true,
+      renderCell: (row) => {
+        const color = SERVICE_COLORS[row.numericId % SERVICE_COLORS.length]
+        return (
+          <div className={styles.serviceCell}>
+            <div className={styles.serviceIcon} style={{ background: color }}>
+              <Briefcase size={13} color="#fff" strokeWidth={1.5} />
+            </div>
+            <div>
+              <span className={styles.serviceName}>{row.name}</span>
+              {row.description && <div className={styles.serviceDesc}>{row.description}</div>}
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      key: 'category',
+      header: 'Категория',
+      renderCell: (row) => (
+        <span className={styles.catPill}>{row.category ?? '—'}</span>
+      ),
+    },
+    {
+      key: 'price',
+      header: 'Цена',
+      sortable: true,
+      renderCell: (row) => (
+        <span className={styles.priceCell}>
+          {formatRubles(row.price)}
+          <span className={styles.priceUnit}> / {row.unit}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'durationHours',
+      header: 'Длительность',
+      renderCell: (row) =>
+        row.durationHours ? (
+          <span className={styles.durationPill}>
+            <Clock size={10} />
+            {row.durationHours} ч
+          </span>
+        ) : <span style={{ color: 'var(--color-text-tertiary)' }}>—</span>,
+    },
+    {
+      key: 'active',
+      header: 'Статус',
+      renderCell: (row) => (
+        <span className={row.active ? styles.statusActive : styles.statusInactive}>
+          {row.active ? 'Активна' : 'Скрыта'}
+        </span>
+      ),
+    },
+  ]
+
+  const bulkActions = [
+    {
+      id: 'delete',
+      label: 'Удалить',
+      icon: <Trash2 size={13} />,
+      variant: 'danger' as const,
+      onClick: (ids: string[]) => {
+        Promise.all(ids.map((id) => deleteMutation.mutate(Number(id))))
+          .then(() => queryClient.invalidateQueries({ queryKey: ['catalog', org?.id, 'services'] }))
+      },
+    },
+  ]
+
+  const activeChips = [
+    ...(search ? [{ id: 'search', label: 'Поиск', value: search }] : []),
+    ...(categoryFilter !== 'all' ? [{ id: 'category', label: 'Категория', value: categoryFilter }] : []),
+  ]
+
+  const totalValue = filtered.reduce((s, svc) => s + svc.price, 0)
 
   return (
     <AppLayout>
       <div className={styles.page}>
-        <div className={styles.topBar}>
-          <div className={styles.titleGroup}>
-            <h1 className={styles.pageTitle}>Каталог услуг</h1>
-            <p className={styles.pageSubtitle}>{DEMO_SERVICES.length} услуг · {[...new Set(DEMO_SERVICES.map((s) => s.category))].length} категорий</p>
-          </div>
-          <div className={styles.actions}>
-            <button type="button" className={`${styles.btn} ${styles.btnPrimary}`}>
-              <Plus size={14} />
-              Новая услуга
-            </button>
-          </div>
-        </div>
-        <div className={styles.body}>
-          <div className={styles.toolbar}>
-            <div className={styles.searchWrap}>
-              <Search size={14} className={styles.searchIcon} />
-              <input className={styles.searchInput} type="text" placeholder="Поиск услуг..." value={search} onChange={(e) => setSearch(e.target.value)} />
-            </div>
-            <div className={styles.filterTabs}>
-              {(['all', 'consulting', 'support', 'training', 'development'] as const).map((c) => (
-                <button key={c} type="button" className={`${styles.filterTab} ${category === c ? styles.filterTabActive : ''}`} onClick={() => setCategory(c)}>
-                  {c === 'all' ? 'Все' : CATEGORY_LABELS[c]}
+        <PageHeader
+          title="Услуги"
+          breadcrumb={[{ label: 'Каталог' }]}
+          description={isLoading ? 'Загрузка...' : `${servicesData?.total ?? 0} услуг · ${formatRubles(totalValue)} суммарно`}
+          actions={
+            <>
+              <div className={styles.viewToggle}>
+                <button
+                  type="button"
+                  className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
+                  onClick={() => setView('grid')}
+                  title="Сетка"
+                >
+                  <LayoutGrid size={14} />
                 </button>
-              ))}
-            </div>
-            <div className={styles.viewToggle}>
-              <button type="button" className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`} onClick={() => setView('grid')} title="Сетка"><LayoutGrid size={14} /></button>
-              <button type="button" className={`${styles.viewBtn} ${view === 'table' ? styles.viewBtnActive : ''}`} onClick={() => setView('table')} title="Список"><List size={14} /></button>
-            </div>
+                <button
+                  type="button"
+                  className={`${styles.viewBtn} ${view === 'table' ? styles.viewBtnActive : ''}`}
+                  onClick={() => setView('table')}
+                  title="Таблица"
+                >
+                  <List size={14} />
+                </button>
+              </div>
+              <Button variant="primary" size="sm" iconLeft={<Plus size={13} />}>
+                Добавить услугу
+              </Button>
+            </>
+          }
+          tabs={[
+            { id: 'all', label: 'Все', count: servicesData?.total },
+            ...categories.map((c) => ({ id: c, label: c })),
+          ]}
+          activeTab={categoryFilter}
+          onTabChange={(id) => setCategoryFilter(id)}
+        />
+
+        <FilterBar
+          chips={activeChips}
+          onRemoveChip={(id) => {
+            if (id === 'search') setSearch('')
+            if (id === 'category') setCategoryFilter('all')
+          }}
+          onClearAll={() => { setSearch(''); setCategoryFilter('all') }}
+          totalCount={servicesData?.total}
+          filteredCount={filtered.length}
+        >
+          <input
+            type="search"
+            className={styles.searchInput}
+            placeholder="Поиск по названию..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </FilterBar>
+
+        {view === 'grid' ? (
+          <div className={styles.body}>
+            {filtered.length === 0 ? (
+              <div className={styles.emptyState}>
+                <Briefcase size={40} strokeWidth={1.5} />
+                <p className={styles.emptyTitle}>{search ? 'Услуги не найдены' : 'Нет услуг'}</p>
+                <p className={styles.emptyText}>
+                  {search ? 'Измените критерии поиска' : 'Добавьте первую услугу в каталог'}
+                </p>
+              </div>
+            ) : (
+              <div className={styles.grid}>
+                {filtered.map((s) => <ServiceGridCard key={s.id} service={s} />)}
+              </div>
+            )}
           </div>
-
-          {view === 'grid' ? (
-            <div className={styles.serviceGrid}>
-              {filtered.map((s) => <ServiceCard key={s.id} service={s} />)}
-            </div>
-          ) : (
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead><tr><th>Услуга</th><th>Категория</th><th>Стоимость</th><th>Длительность</th><th>Исполнители</th></tr></thead>
-                <tbody>{filtered.map((s) => <ServiceRow key={s.id} service={s} />)}</tbody>
-              </table>
-            </div>
-          )}
-
-          {filtered.length === 0 && (
-            <div className={styles.empty}><Briefcase size={40} strokeWidth={1.5} /><p>Услуги не найдены</p></div>
-          )}
-        </div>
+        ) : (
+          <div className={styles.tableWrap}>
+            <DataTable
+              columns={columns}
+              data={tableData}
+              loading={isLoading}
+              bulkActions={bulkActions}
+              emptyState={
+                <div className={styles.emptyState}>
+                  <Briefcase size={40} strokeWidth={1.5} />
+                  <p className={styles.emptyTitle}>{search ? 'Услуги не найдены' : 'Нет услуг'}</p>
+                  <p className={styles.emptyText}>
+                    {search ? 'Измените критерии поиска' : 'Добавьте первую услугу в каталог'}
+                  </p>
+                  {!search && (
+                    <Button variant="primary" size="sm" iconLeft={<Plus size={13} />}>
+                      Добавить услугу
+                    </Button>
+                  )}
+                </div>
+              }
+            />
+          </div>
+        )}
       </div>
     </AppLayout>
   )

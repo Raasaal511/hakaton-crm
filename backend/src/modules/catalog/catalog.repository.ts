@@ -3,13 +3,18 @@ import { TYPES } from '../../types.js'
 import type { DB } from '../../infra/database/drizzle/client.js'
 import {
   productCategoriesSchema,
+  productPriceHistorySchema,
   productsSchema,
+  stockMovementsSchema,
   servicesSchema,
+  warehousesSchema,
   Product,
   CatalogService,
   ProductCategory,
+  Warehouse,
+  StockMovement,
 } from '../../infra/database/drizzle/schema.js'
-import { eq, and, isNull, ilike, sql } from 'drizzle-orm'
+import { eq, and, isNull, ilike, sql, desc } from 'drizzle-orm'
 import type {
   CreateCategoryDTO,
   UpdateCategoryDTO,
@@ -96,6 +101,71 @@ export class CatalogRepository {
   }
 
   // ---------------------------------------------------------------------------
+  // Warehouses and stock ledger
+  // ---------------------------------------------------------------------------
+
+  async findWarehouses(orgId: number): Promise<Warehouse[]> {
+    return this.db
+      .select()
+      .from(warehousesSchema)
+      .where(eq(warehousesSchema.organizationId, orgId))
+      .orderBy(warehousesSchema.name)
+  }
+
+  async createWarehouse(orgId: number, dto: {
+    name: string
+    code?: string
+    address?: string
+    responsibleUserId?: number | null
+    active?: boolean
+  }): Promise<Warehouse> {
+    const [row] = await this.db.insert(warehousesSchema).values({
+      organizationId: orgId,
+      name: dto.name,
+      code: dto.code ?? null,
+      address: dto.address ?? null,
+      responsibleUserId: dto.responsibleUserId ?? null,
+      active: dto.active ?? true,
+    }).returning()
+    return row!
+  }
+
+  async findStockMovements(orgId: number, productId?: number): Promise<StockMovement[]> {
+    const conditions = [eq(stockMovementsSchema.organizationId, orgId)]
+    if (productId) conditions.push(eq(stockMovementsSchema.productId, productId))
+    return this.db
+      .select()
+      .from(stockMovementsSchema)
+      .where(and(...conditions))
+      .orderBy(desc(stockMovementsSchema.createdAt))
+      .limit(200)
+  }
+
+  async getInventorySummary(orgId: number): Promise<{
+    skuCount: number
+    stockValue: number
+    potentialRevenue: number
+    potentialProfit: number
+  }> {
+    const rows = await this.db
+      .select({
+        skuCount: sql<number>`count(*)::int`,
+        stockValue: sql<number>`coalesce(sum(${productsSchema.stockQuantity} * ${productsSchema.costPrice}), 0)::int`,
+        potentialRevenue: sql<number>`coalesce(sum(${productsSchema.stockQuantity} * ${productsSchema.price}), 0)::int`,
+        potentialProfit: sql<number>`coalesce(sum(${productsSchema.stockQuantity} * (${productsSchema.price} - ${productsSchema.costPrice})), 0)::int`,
+      })
+      .from(productsSchema)
+      .where(and(eq(productsSchema.organizationId, orgId), isNull(productsSchema.deletedAt)))
+
+    return {
+      skuCount: Number(rows[0]?.skuCount ?? 0),
+      stockValue: Number(rows[0]?.stockValue ?? 0),
+      potentialRevenue: Number(rows[0]?.potentialRevenue ?? 0),
+      potentialProfit: Number(rows[0]?.potentialProfit ?? 0),
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Products
   // ---------------------------------------------------------------------------
 
@@ -176,6 +246,15 @@ export class CatalogRepository {
         active: dto.active ?? true,
       })
       .returning()
+    await this.recordPriceHistory(orgId, row!.id, row!.price, row!.costPrice, null)
+    if ((dto.stockQuantity ?? 0) > 0) {
+      await this.recordStockMovement(orgId, row!.id, {
+        delta: row!.stockQuantity,
+        type: 'inventory',
+        reason: 'initial_stock',
+        unitCost: row!.costPrice,
+      }, null)
+    }
     return row!
   }
 
@@ -204,10 +283,14 @@ export class CatalogRepository {
         ),
       )
       .returning()
-    return rows[0] ?? null
+    const updated = rows[0] ?? null
+    if (updated && (dto.price !== undefined || dto.costPrice !== undefined)) {
+      await this.recordPriceHistory(orgId, updated.id, updated.price, updated.costPrice, null)
+    }
+    return updated
   }
 
-  async adjustStock(orgId: number, id: number, dto: AdjustStockDTO): Promise<Product | null> {
+  async adjustStock(orgId: number, id: number, dto: AdjustStockDTO, actorUserId: number | null = null): Promise<Product | null> {
     const rows = await this.db
       .update(productsSchema)
       .set({
@@ -221,7 +304,46 @@ export class CatalogRepository {
         ),
       )
       .returning()
-    return rows[0] ?? null
+    const updated = rows[0] ?? null
+    if (updated) {
+      await this.recordStockMovement(orgId, id, dto, actorUserId)
+    }
+    return updated
+  }
+
+  async recordStockMovement(
+    orgId: number,
+    productId: number,
+    dto: AdjustStockDTO,
+    actorUserId: number | null,
+  ): Promise<void> {
+    await this.db.insert(stockMovementsSchema).values({
+      organizationId: orgId,
+      productId,
+      warehouseId: dto.warehouseId ?? null,
+      targetWarehouseId: dto.targetWarehouseId ?? null,
+      type: dto.type ?? 'adjustment',
+      quantity: dto.delta,
+      unitCost: dto.unitCost ?? 0,
+      reason: dto.reason ?? null,
+      actorUserId,
+    })
+  }
+
+  async recordPriceHistory(
+    orgId: number,
+    productId: number,
+    price: number,
+    costPrice: number,
+    changedByUserId: number | null,
+  ): Promise<void> {
+    await this.db.insert(productPriceHistorySchema).values({
+      organizationId: orgId,
+      productId,
+      price,
+      costPrice,
+      changedByUserId,
+    })
   }
 
   async deleteProduct(orgId: number, id: number): Promise<boolean> {

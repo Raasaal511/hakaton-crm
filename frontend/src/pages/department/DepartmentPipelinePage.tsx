@@ -653,7 +653,7 @@ export function DepartmentPipelinePage() {
   }, [departmentId, pipelineId])
 
   useEffect(() => {
-    const content = pipeline?.name?.trim() ? `${pipeline.name.trim()} - Rasl Tasks` : 'Rasl Tasks'
+    const content = pipeline?.name?.trim() ? `${pipeline.name.trim()} - Meridian` : 'Meridian'
     const descriptionMeta = document.querySelector('meta[name="description"]')
 
     document.title = content
@@ -663,7 +663,7 @@ export function DepartmentPipelinePage() {
     descriptionMeta.setAttribute('content', content)
 
     return () => {
-      document.title = 'Rasl Tasks'
+      document.title = 'Meridian'
       descriptionMeta.setAttribute('content', previousDescription)
     }
   }, [pipeline?.name])

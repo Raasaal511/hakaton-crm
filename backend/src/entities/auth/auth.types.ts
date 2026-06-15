@@ -14,4 +14,4 @@ export type UpdateProfileDTO = Pick<User, 'firstname' | 'lastname'>
 export type ChangePasswordDTO = { currentPassword?: string; newPassword: string }
 export type ChangeEmailDTO = { email: string }
 export type CreateUserData = Pick<User, 'firstname' | 'lastname' | 'email' | 'hashPassword' | 'profilePasswordSet'>
-export type OrganizationRole = 'owner' | 'admin' | 'member'
+export type OrganizationRole = 'owner' | 'admin' | 'manager' | 'employee' | 'member' | 'viewer'

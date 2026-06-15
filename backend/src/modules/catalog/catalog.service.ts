@@ -1,6 +1,7 @@
 import { injectable, inject } from 'inversify'
 import { TYPES } from '../../types.js'
 import { NotFoundError, BadRequestError } from '../../infra/libs/errors.js'
+import { AuditService } from '../../services/audit.service.js'
 import { CatalogRepository } from './catalog.repository.js'
 import type {
   CreateCategoryDTO,
@@ -16,7 +17,10 @@ import type { Product, CatalogService as CatalogServiceRow, ProductCategory } fr
 
 @injectable()
 export class CatalogService {
-  constructor(@inject(TYPES.CatalogRepository) private repo: CatalogRepository) {}
+  constructor(
+    @inject(TYPES.CatalogRepository) private repo: CatalogRepository,
+    @inject(TYPES.AuditService) private audit: AuditService,
+  ) {}
 
   // ---------------------------------------------------------------------------
   // Categories
@@ -41,7 +45,9 @@ export class CatalogService {
       if (!parent) throw new BadRequestError('Родительская категория не найдена')
     }
 
-    return this.repo.createCategory(orgId, { ...dto, name })
+    const category = await this.repo.createCategory(orgId, { ...dto, name })
+    await this.audit.record({ organizationId: orgId, entityType: 'catalog.category', entityId: category.id, action: 'created', payload: { name } }).catch(() => undefined)
+    return category
   }
 
   async updateCategory(orgId: number, id: number, dto: UpdateCategoryDTO): Promise<ProductCategory> {
@@ -61,6 +67,7 @@ export class CatalogService {
 
     const updated = await this.repo.updateCategory(orgId, id, dto)
     if (!updated) throw new NotFoundError('Категория не найдена')
+    await this.audit.record({ organizationId: orgId, entityType: 'catalog.category', entityId: id, action: 'updated', payload: dto as Record<string, unknown> }).catch(() => undefined)
     return updated
   }
 
@@ -68,6 +75,44 @@ export class CatalogService {
     await this.getCategoryById(orgId, id)
     const deleted = await this.repo.deleteCategory(orgId, id)
     if (!deleted) throw new NotFoundError('Категория не найдена')
+    await this.audit.record({ organizationId: orgId, entityType: 'catalog.category', entityId: id, action: 'deleted' }).catch(() => undefined)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Warehouses and inventory
+  // ---------------------------------------------------------------------------
+
+  async getWarehouses(orgId: number) {
+    return this.repo.findWarehouses(orgId)
+  }
+
+  async createWarehouse(orgId: number, userId: number, dto: {
+    name: string
+    code?: string
+    address?: string
+    responsibleUserId?: number | null
+    active?: boolean
+  }) {
+    const name = dto.name?.trim()
+    if (!name) throw new BadRequestError('Название склада обязательно')
+    const warehouse = await this.repo.createWarehouse(orgId, { ...dto, name })
+    await this.audit.record({
+      organizationId: orgId,
+      actorUserId: userId,
+      entityType: 'catalog.warehouse',
+      entityId: warehouse.id,
+      action: 'created',
+      payload: { name },
+    }).catch(() => undefined)
+    return warehouse
+  }
+
+  async getStockMovements(orgId: number, productId?: number) {
+    return this.repo.findStockMovements(orgId, productId)
+  }
+
+  async getInventorySummary(orgId: number) {
+    return this.repo.getInventorySummary(orgId)
   }
 
   // ---------------------------------------------------------------------------
@@ -108,7 +153,9 @@ export class CatalogService {
       if (!category) throw new BadRequestError('Категория не найдена')
     }
 
-    return this.repo.createProduct(orgId, { ...dto, name })
+    const product = await this.repo.createProduct(orgId, { ...dto, name })
+    await this.audit.record({ organizationId: orgId, entityType: 'catalog.product', entityId: product.id, action: 'created', payload: { name, sku: product.sku } }).catch(() => undefined)
+    return product
   }
 
   async updateProduct(orgId: number, id: number, dto: UpdateProductDTO): Promise<Product> {
@@ -141,10 +188,11 @@ export class CatalogService {
 
     const updated = await this.repo.updateProduct(orgId, id, dto)
     if (!updated) throw new NotFoundError('Товар не найден')
+    await this.audit.record({ organizationId: orgId, entityType: 'catalog.product', entityId: id, action: 'updated', payload: dto as Record<string, unknown> }).catch(() => undefined)
     return updated
   }
 
-  async adjustStock(orgId: number, id: number, dto: AdjustStockDTO): Promise<Product> {
+  async adjustStock(orgId: number, id: number, userId: number, dto: AdjustStockDTO): Promise<Product> {
     const product = await this.getProductById(orgId, id)
 
     if (!Number.isInteger(dto.delta)) {
@@ -156,8 +204,16 @@ export class CatalogService {
       throw new BadRequestError(`Недостаточно товара на складе. Текущий остаток: ${product.stockQuantity}`)
     }
 
-    const updated = await this.repo.adjustStock(orgId, id, dto)
+    const updated = await this.repo.adjustStock(orgId, id, dto, userId)
     if (!updated) throw new NotFoundError('Товар не найден')
+    await this.audit.record({
+      organizationId: orgId,
+      actorUserId: userId,
+      entityType: 'catalog.stock',
+      entityId: id,
+      action: dto.type ?? 'adjustment',
+      payload: { delta: dto.delta, newStock: updated.stockQuantity, reason: dto.reason ?? null },
+    }).catch(() => undefined)
     return updated
   }
 
@@ -165,6 +221,7 @@ export class CatalogService {
     await this.getProductById(orgId, id)
     const deleted = await this.repo.deleteProduct(orgId, id)
     if (!deleted) throw new NotFoundError('Товар не найден')
+    await this.audit.record({ organizationId: orgId, entityType: 'catalog.product', entityId: id, action: 'deleted' }).catch(() => undefined)
   }
 
   // ---------------------------------------------------------------------------
@@ -192,7 +249,9 @@ export class CatalogService {
       throw new BadRequestError('Длительность не может быть отрицательной')
     }
 
-    return this.repo.createService(orgId, { ...dto, name })
+    const service = await this.repo.createService(orgId, { ...dto, name })
+    await this.audit.record({ organizationId: orgId, entityType: 'catalog.service', entityId: service.id, action: 'created', payload: { name } }).catch(() => undefined)
+    return service
   }
 
   async updateService(orgId: number, id: number, dto: UpdateServiceDTO): Promise<CatalogServiceRow> {
@@ -210,6 +269,7 @@ export class CatalogService {
 
     const updated = await this.repo.updateService(orgId, id, dto)
     if (!updated) throw new NotFoundError('Услуга не найдена')
+    await this.audit.record({ organizationId: orgId, entityType: 'catalog.service', entityId: id, action: 'updated', payload: dto as Record<string, unknown> }).catch(() => undefined)
     return updated
   }
 
@@ -217,5 +277,6 @@ export class CatalogService {
     await this.getServiceById(orgId, id)
     const deleted = await this.repo.deleteService(orgId, id)
     if (!deleted) throw new NotFoundError('Услуга не найдена')
+    await this.audit.record({ organizationId: orgId, entityType: 'catalog.service', entityId: id, action: 'deleted' }).catch(() => undefined)
   }
 }

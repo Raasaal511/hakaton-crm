@@ -5,7 +5,7 @@ import type { DepartmentPermissions } from '../../../entities/department/departm
 import type { DepartmentPolicies } from '../../../entities/department/department.policies.js'
 import type { UserPreferences } from '../../../entities/user/user.preferences.js'
 
-export const organizationRoleEnum = pgEnum('organization_role', ['owner', 'admin', 'member', 'viewer'])
+export const organizationRoleEnum = pgEnum('organization_role', ['owner', 'admin', 'manager', 'employee', 'member', 'viewer'])
 export const systemRoleEnum = pgEnum('system_role', ['user', 'root'])
 export const departmentRoleEnum = pgEnum('department_role', ['member', 'admin'])
 
@@ -281,6 +281,52 @@ export const rbacPermissionsSchema = pgTable('rbac_permissions', {
     userOrgIdx: index('rbac_user_org_idx').on(table.userId, table.organizationId),
 }))
 
+export const rbacGroupsSchema = pgTable('rbac_groups', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    departmentId: integer('department_id').references(() => departmentSchema.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 160 }).notNull(),
+    description: text('description'),
+    parentGroupId: integer('parent_group_id'),
+    permissions: jsonb('permissions').notNull().default({}).$type<Record<string, boolean>>(),
+    dataRestrictions: jsonb('data_restrictions').notNull().default({}).$type<Record<string, unknown>>(),
+    createdByUserId: integer('created_by_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+    updatedAt: appTimestamp('updated_at').default(sql`now()`).$onUpdate(() => new Date()),
+}, (table) => ({
+    orgIdx: index('rbac_groups_org_idx').on(table.organizationId),
+}))
+
+export type RbacGroup = typeof rbacGroupsSchema.$inferSelect
+
+export const rbacGroupMembersSchema = pgTable('rbac_group_members', {
+    groupId: integer('group_id').references(() => rbacGroupsSchema.id, { onDelete: 'cascade' }).notNull(),
+    userId: integer('user_id').references(() => usersSchema.id, { onDelete: 'cascade' }).notNull(),
+    expiresAt: appTimestamp('expires_at'),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    pk: primaryKey({ columns: [table.groupId, table.userId] }),
+    userIdx: index('rbac_group_members_user_idx').on(table.userId),
+}))
+
+export const auditLogsSchema = pgTable('audit_logs', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }),
+    actorUserId: integer('actor_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    entityType: varchar('entity_type', { length: 80 }).notNull(),
+    entityId: integer('entity_id'),
+    action: varchar('action', { length: 80 }).notNull(),
+    ipAddress: varchar('ip_address', { length: 80 }),
+    userAgent: text('user_agent'),
+    payload: jsonb('payload').notNull().default({}).$type<Record<string, unknown>>(),
+    createdAt: appTimestamp('created_at').default(sql`now()`).notNull(),
+}, (table) => ({
+    orgCreatedIdx: index('audit_logs_org_created_idx').on(table.organizationId, table.createdAt),
+    entityIdx: index('audit_logs_entity_idx').on(table.entityType, table.entityId),
+}))
+
+export type AuditLog = typeof auditLogsSchema.$inferSelect
+
 // ---------------------------------------------------------------------------
 // CRM Segments
 // ---------------------------------------------------------------------------
@@ -403,6 +449,86 @@ export const crmLeadTagsSchema = pgTable('crm_lead_tags', {
     pk: primaryKey({ columns: [table.leadId, table.tagId] }),
 }))
 
+export const crmLeadSourcesSchema = pgTable('crm_lead_sources', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    name: varchar('name', { length: 160 }).notNull(),
+    code: varchar('code', { length: 80 }),
+    color: varchar('color', { length: 7 }),
+    active: boolean('active').default(true).notNull(),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    orgIdx: index('crm_lead_sources_org_idx').on(table.organizationId),
+}))
+
+export type CrmLeadSource = typeof crmLeadSourcesSchema.$inferSelect
+
+export const crmDealStagesSchema = pgTable('crm_deal_stages', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    name: varchar('name', { length: 160 }).notNull(),
+    code: varchar('code', { length: 80 }).notNull(),
+    position: integer('position').default(0).notNull(),
+    probability: integer('probability').default(0).notNull(),
+    color: varchar('color', { length: 7 }),
+    isWon: boolean('is_won').default(false).notNull(),
+    isLost: boolean('is_lost').default(false).notNull(),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+    updatedAt: appTimestamp('updated_at').default(sql`now()`).$onUpdate(() => new Date()),
+}, (table) => ({
+    orgPositionIdx: index('crm_deal_stages_org_position_idx').on(table.organizationId, table.position),
+}))
+
+export type CrmDealStage = typeof crmDealStagesSchema.$inferSelect
+
+export const crmDealsSchema = pgTable('crm_deals', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    leadId: integer('lead_id').references(() => crmLeadsSchema.id, { onDelete: 'set null' }),
+    contactId: integer('contact_id').references(() => crmContactsSchema.id, { onDelete: 'set null' }),
+    companyId: integer('company_id').references(() => crmCompaniesSchema.id, { onDelete: 'set null' }),
+    stageId: integer('stage_id').references(() => crmDealStagesSchema.id, { onDelete: 'set null' }),
+    title: varchar('title', { length: 255 }).notNull(),
+    amount: integer('amount').default(0).notNull(),
+    currency: varchar('currency', { length: 3 }).default('RUB').notNull(),
+    probability: integer('probability').default(0).notNull(),
+    status: varchar('status', { length: 50 }).default('open').notNull(),
+    source: varchar('source', { length: 100 }),
+    ownerUserId: integer('owner_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    expectedCloseDate: appTimestamp('expected_close_date'),
+    closedAt: appTimestamp('closed_at'),
+    nextStep: text('next_step'),
+    notes: text('notes'),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+    updatedAt: appTimestamp('updated_at').default(sql`now()`).$onUpdate(() => new Date()),
+    deletedAt: appTimestamp('deleted_at'),
+}, (table) => ({
+    orgIdx: index('crm_deals_org_idx').on(table.organizationId),
+    stageIdx: index('crm_deals_stage_idx').on(table.stageId),
+    ownerIdx: index('crm_deals_owner_idx').on(table.ownerUserId),
+}))
+
+export type CrmDeal = typeof crmDealsSchema.$inferSelect
+
+export const crmDealLineItemsSchema = pgTable('crm_deal_line_items', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    dealId: integer('deal_id').references(() => crmDealsSchema.id, { onDelete: 'cascade' }).notNull(),
+    productId: integer('product_id'),
+    serviceId: integer('service_id'),
+    itemType: varchar('item_type', { length: 30 }).notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    quantity: integer('quantity').default(1).notNull(),
+    unitPrice: integer('unit_price').default(0).notNull(),
+    costPrice: integer('cost_price').default(0).notNull(),
+    currency: varchar('currency', { length: 3 }).default('RUB').notNull(),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    dealIdx: index('crm_deal_line_items_deal_idx').on(table.dealId),
+}))
+
+export type CrmDealLineItem = typeof crmDealLineItemsSchema.$inferSelect
+
 export const crmActivitySchema = pgTable('crm_activity', {
     id: serial('id').primaryKey(),
     organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
@@ -415,6 +541,79 @@ export const crmActivitySchema = pgTable('crm_activity', {
 }, (table) => ({
     entityIdx: index('crm_activity_entity_idx').on(table.entityType, table.entityId, table.createdAt),
 }))
+
+export const crmDocumentsSchema = pgTable('crm_documents', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    entityType: varchar('entity_type', { length: 50 }).notNull(),
+    entityId: integer('entity_id').notNull(),
+    title: varchar('title', { length: 255 }).notNull(),
+    kind: varchar('kind', { length: 80 }).default('attachment').notNull(),
+    fileName: varchar('file_name', { length: 512 }),
+    mimeType: varchar('mime_type', { length: 255 }),
+    sizeBytes: integer('size_bytes'),
+    templateCode: varchar('template_code', { length: 120 }),
+    generatedPayload: jsonb('generated_payload').notNull().default({}).$type<Record<string, unknown>>(),
+    createdByUserId: integer('created_by_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    entityIdx: index('crm_documents_entity_idx').on(table.entityType, table.entityId),
+}))
+
+export type CrmDocument = typeof crmDocumentsSchema.$inferSelect
+
+export const crmCommunicationsSchema = pgTable('crm_communications', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    entityType: varchar('entity_type', { length: 50 }).notNull(),
+    entityId: integer('entity_id').notNull(),
+    channel: varchar('channel', { length: 40 }).notNull(),
+    direction: varchar('direction', { length: 20 }).default('outbound').notNull(),
+    subject: varchar('subject', { length: 255 }),
+    body: text('body'),
+    externalId: varchar('external_id', { length: 255 }),
+    status: varchar('status', { length: 40 }).default('draft').notNull(),
+    actorUserId: integer('actor_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    entityIdx: index('crm_communications_entity_idx').on(table.entityType, table.entityId),
+}))
+
+export type CrmCommunication = typeof crmCommunicationsSchema.$inferSelect
+
+export const automationRulesSchema = pgTable('automation_rules', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    triggerType: varchar('trigger_type', { length: 80 }).notNull(),
+    conditions: jsonb('conditions').notNull().default({}).$type<Record<string, unknown>>(),
+    actions: jsonb('actions').notNull().default([]).$type<Record<string, unknown>[]>(),
+    active: boolean('active').default(true).notNull(),
+    createdByUserId: integer('created_by_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+    updatedAt: appTimestamp('updated_at').default(sql`now()`).$onUpdate(() => new Date()),
+}, (table) => ({
+    orgIdx: index('automation_rules_org_idx').on(table.organizationId),
+}))
+
+export type AutomationRule = typeof automationRulesSchema.$inferSelect
+
+export const automationRunsSchema = pgTable('automation_runs', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    ruleId: integer('rule_id').references(() => automationRulesSchema.id, { onDelete: 'set null' }),
+    entityType: varchar('entity_type', { length: 50 }),
+    entityId: integer('entity_id'),
+    status: varchar('status', { length: 40 }).default('queued').notNull(),
+    payload: jsonb('payload').notNull().default({}).$type<Record<string, unknown>>(),
+    error: text('error'),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    ruleIdx: index('automation_runs_rule_idx').on(table.ruleId, table.createdAt),
+}))
+
+export type AutomationRun = typeof automationRunsSchema.$inferSelect
 
 // ---------------------------------------------------------------------------
 // Catalog
@@ -457,6 +656,77 @@ export const productsSchema = pgTable('products', {
 
 export type Product = typeof productsSchema.$inferSelect
 
+export const warehousesSchema = pgTable('warehouses', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    code: varchar('code', { length: 80 }),
+    address: text('address'),
+    responsibleUserId: integer('responsible_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    active: boolean('active').default(true).notNull(),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+    updatedAt: appTimestamp('updated_at').default(sql`now()`).$onUpdate(() => new Date()),
+}, (table) => ({
+    orgIdx: index('warehouses_org_idx').on(table.organizationId),
+}))
+
+export type Warehouse = typeof warehousesSchema.$inferSelect
+
+export const stockMovementsSchema = pgTable('stock_movements', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    productId: integer('product_id').references(() => productsSchema.id, { onDelete: 'cascade' }).notNull(),
+    warehouseId: integer('warehouse_id').references(() => warehousesSchema.id, { onDelete: 'set null' }),
+    targetWarehouseId: integer('target_warehouse_id').references(() => warehousesSchema.id, { onDelete: 'set null' }),
+    type: varchar('type', { length: 40 }).notNull(),
+    quantity: integer('quantity').notNull(),
+    unitCost: integer('unit_cost').default(0).notNull(),
+    reason: text('reason'),
+    referenceType: varchar('reference_type', { length: 50 }),
+    referenceId: integer('reference_id'),
+    actorUserId: integer('actor_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    productIdx: index('stock_movements_product_idx').on(table.productId, table.createdAt),
+    warehouseIdx: index('stock_movements_warehouse_idx').on(table.warehouseId, table.createdAt),
+}))
+
+export type StockMovement = typeof stockMovementsSchema.$inferSelect
+
+export const productPriceHistorySchema = pgTable('product_price_history', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    productId: integer('product_id').references(() => productsSchema.id, { onDelete: 'cascade' }).notNull(),
+    price: integer('price').notNull(),
+    costPrice: integer('cost_price').default(0).notNull(),
+    currency: varchar('currency', { length: 3 }).default('RUB').notNull(),
+    changedByUserId: integer('changed_by_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    productIdx: index('product_price_history_product_idx').on(table.productId, table.createdAt),
+}))
+
+export type ProductPriceHistory = typeof productPriceHistorySchema.$inferSelect
+
+export const purchasesSchema = pgTable('purchases', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    supplierCompanyId: integer('supplier_company_id').references(() => crmCompaniesSchema.id, { onDelete: 'set null' }),
+    productId: integer('product_id').references(() => productsSchema.id, { onDelete: 'set null' }),
+    warehouseId: integer('warehouse_id').references(() => warehousesSchema.id, { onDelete: 'set null' }),
+    quantity: integer('quantity').default(0).notNull(),
+    unitCost: integer('unit_cost').default(0).notNull(),
+    status: varchar('status', { length: 40 }).default('planned').notNull(),
+    expectedAt: appTimestamp('expected_at'),
+    receivedAt: appTimestamp('received_at'),
+    createdByUserId: integer('created_by_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    orgIdx: index('purchases_org_idx').on(table.organizationId, table.createdAt),
+}))
+
+export type Purchase = typeof purchasesSchema.$inferSelect
+
 export const servicesSchema = pgTable('catalog_services', {
     id: serial('id').primaryKey(),
     organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
@@ -476,3 +746,90 @@ export const servicesSchema = pgTable('catalog_services', {
 }))
 
 export type CatalogService = typeof servicesSchema.$inferSelect
+
+export const serviceTariffsSchema = pgTable('service_tariffs', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    serviceId: integer('service_id').references(() => servicesSchema.id, { onDelete: 'cascade' }).notNull(),
+    name: varchar('name', { length: 160 }).notNull(),
+    price: integer('price').default(0).notNull(),
+    costPrice: integer('cost_price').default(0).notNull(),
+    currency: varchar('currency', { length: 3 }).default('RUB').notNull(),
+    durationHours: integer('duration_hours'),
+    active: boolean('active').default(true).notNull(),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    serviceIdx: index('service_tariffs_service_idx').on(table.serviceId),
+}))
+
+export type ServiceTariff = typeof serviceTariffsSchema.$inferSelect
+
+export const serviceExecutorsSchema = pgTable('service_executors', {
+    serviceId: integer('service_id').references(() => servicesSchema.id, { onDelete: 'cascade' }).notNull(),
+    userId: integer('user_id').references(() => usersSchema.id, { onDelete: 'cascade' }).notNull(),
+    costRate: integer('cost_rate').default(0).notNull(),
+    active: boolean('active').default(true).notNull(),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    pk: primaryKey({ columns: [table.serviceId, table.userId] }),
+}))
+
+export const salesQuotesSchema = pgTable('sales_quotes', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    dealId: integer('deal_id').references(() => crmDealsSchema.id, { onDelete: 'set null' }),
+    companyId: integer('company_id').references(() => crmCompaniesSchema.id, { onDelete: 'set null' }),
+    contactId: integer('contact_id').references(() => crmContactsSchema.id, { onDelete: 'set null' }),
+    number: varchar('number', { length: 80 }).notNull(),
+    status: varchar('status', { length: 40 }).default('draft').notNull(),
+    subtotal: integer('subtotal').default(0).notNull(),
+    discount: integer('discount').default(0).notNull(),
+    total: integer('total').default(0).notNull(),
+    currency: varchar('currency', { length: 3 }).default('RUB').notNull(),
+    validUntil: appTimestamp('valid_until'),
+    createdByUserId: integer('created_by_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+    updatedAt: appTimestamp('updated_at').default(sql`now()`).$onUpdate(() => new Date()),
+}, (table) => ({
+    orgIdx: index('sales_quotes_org_idx').on(table.organizationId, table.createdAt),
+}))
+
+export type SalesQuote = typeof salesQuotesSchema.$inferSelect
+
+export const salesInvoicesSchema = pgTable('sales_invoices', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    dealId: integer('deal_id').references(() => crmDealsSchema.id, { onDelete: 'set null' }),
+    quoteId: integer('quote_id').references(() => salesQuotesSchema.id, { onDelete: 'set null' }),
+    number: varchar('number', { length: 80 }).notNull(),
+    status: varchar('status', { length: 40 }).default('draft').notNull(),
+    total: integer('total').default(0).notNull(),
+    paidAmount: integer('paid_amount').default(0).notNull(),
+    currency: varchar('currency', { length: 3 }).default('RUB').notNull(),
+    issuedAt: appTimestamp('issued_at'),
+    dueAt: appTimestamp('due_at'),
+    paidAt: appTimestamp('paid_at'),
+    createdByUserId: integer('created_by_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+    updatedAt: appTimestamp('updated_at').default(sql`now()`).$onUpdate(() => new Date()),
+}, (table) => ({
+    orgIdx: index('sales_invoices_org_idx').on(table.organizationId, table.createdAt),
+}))
+
+export type SalesInvoice = typeof salesInvoicesSchema.$inferSelect
+
+export const realtimeBoardJournalSchema = pgTable('realtime_board_journal', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    boardId: varchar('board_id', { length: 120 }).notNull(),
+    actorUserId: integer('actor_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    eventType: varchar('event_type', { length: 80 }).notNull(),
+    cardType: varchar('card_type', { length: 40 }),
+    cardId: integer('card_id'),
+    payload: jsonb('payload').notNull().default({}).$type<Record<string, unknown>>(),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+}, (table) => ({
+    boardIdx: index('realtime_board_journal_board_idx').on(table.organizationId, table.boardId, table.createdAt),
+}))
+
+export type RealtimeBoardJournal = typeof realtimeBoardJournalSchema.$inferSelect

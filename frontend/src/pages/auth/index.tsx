@@ -7,8 +7,8 @@ export function AuthPage() {
     <div className={styles.wrapper}>
       <div className={styles.card}>
         <img src="/logo.png" alt="Логотип" className={styles.logo} />
-        <h1 className={styles.title}>Rasl Tasks</h1>
-        <p className={styles.subtitle}>Вход в Rasl Tasks</p>
+        <h1 className={styles.title}>Meridian</h1>
+        <p className={styles.subtitle}>Войдите в систему</p>
         <LoginForm />
         <p className={styles.footer}>
           Нет аккаунта?{' '}

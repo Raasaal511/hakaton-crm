@@ -7,8 +7,8 @@ export function RegisterPage() {
     <div className={styles.wrapper}>
       <div className={styles.card}>
         <img src="/logo.png" alt="Логотип" className={styles.logo} />
-        <h1 className={styles.title}>Rasl Tasks</h1>
-        <p className={styles.subtitle}>Регистрация в Rasl Tasks</p>
+        <h1 className={styles.title}>Meridian</h1>
+        <p className={styles.subtitle}>Создайте аккаунт</p>
         <RegisterForm />
         <p className={styles.footer}>
           Уже есть аккаунт?{' '}

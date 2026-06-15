@@ -5,19 +5,31 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="PulsarCRM — Единая платформа для управления продажами и клиентами" />
-    <meta name="theme-color" content="#4361ee" />
+    <meta name="description" content="Meridian CRM — Операционный центр вашего бизнеса" />
+    <meta name="theme-color" content="#7c3aed" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="PulsarCRM" />
-    <title>PulsarCRM</title>
+    <meta name="apple-mobile-web-app-title" content="Meridian" />
+    <title>Meridian</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script>
       (function () {
-        var key = 'rasl_theme';
+        var keys = ['crm_theme', 'rasl_theme'];
         var pref = 'system';
         try {
-          var stored = localStorage.getItem(key);
-          if (stored === 'light' || stored === 'dark' || stored === 'system') pref = stored;
+          for (var i = 0; i < keys.length; i++) {
+            var stored = localStorage.getItem(keys[i]);
+            if (stored === 'light' || stored === 'dark' || stored === 'system') {
+              pref = stored;
+              if (keys[i] !== 'crm_theme') {
+                localStorage.setItem('crm_theme', pref);
+                localStorage.removeItem(keys[i]);
+              }
+              break;
+            }
+          }
         } catch (e) {}
         var dark =
           pref === 'dark' ||
@@ -25,7 +37,7 @@
         var resolved = dark ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', resolved);
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', dark ? '#161b22' : '#4361ee');
+        if (meta) meta.setAttribute('content', dark ? '#0a0f1e' : '#7c3aed');
       })();
     </script>
   </head>

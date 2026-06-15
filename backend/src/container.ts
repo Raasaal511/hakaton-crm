@@ -16,6 +16,8 @@ import { TagsRepository } from './infra/database/drizzle/tags/tags.repository.js
 import { AuthService } from './services/auth.service.js'
 import { OrganizationService } from './services/organization.service.js'
 import { OrganizationAccessService } from './services/organization-access.service.js'
+import { RbacService } from './services/rbac.service.js'
+import { AuditService } from './services/audit.service.js'
 import { DepartmentAccessService } from './services/department-access.service.js'
 import { PolicyResolverService } from './services/policy-resolver.service.js'
 import { DepartmentService } from './services/department.service.js'
@@ -59,6 +61,8 @@ container.bind(TYPES.AuthController).to(AuthController)
 
 container.bind(TYPES.OrganizationRepository).to(OrganizationRepository)
 container.bind(TYPES.OrganizationAccessService).to(OrganizationAccessService)
+container.bind(TYPES.RbacService).to(RbacService)
+container.bind(TYPES.AuditService).to(AuditService)
 container.bind(TYPES.OrganizationService).to(OrganizationService)
 container.bind(TYPES.OrganizationController).to(OrganizationController)
 
