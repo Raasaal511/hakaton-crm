@@ -1,0 +1,491 @@
+/* Clean two-column layout (avatar | content) — как в Linear/GitHub.
+   Без timeline-линий, без «карточек»: плотный, деловой список. */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
+}
+
+.collapseHead {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.25rem 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-text);
+  border-radius: 6px;
+  transition: background 0.12s;
+}
+
+.collapseHead:hover {
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
+}
+
+.collapseHead:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.chevron {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+  transition: transform 0.15s ease;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+/* Плавное раскрытие: трюк с grid-template-rows 0fr → 1fr,
+   работает с auto-высотой контента без JS. */
+.collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.collapse[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+
+.collapseInner {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.28s cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.collapse[data-open='true'] .collapseInner {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collapse,
+  .collapseInner {
+    transition: none;
+  }
+}
+
+.sectionIcon {
+  width: 22px;
+  height: 22px;
+  color: var(--color-accent);
+  opacity: 0.9;
+  flex: 0 0 auto;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  padding: 0 0.4rem;
+  height: 1.125rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  border-radius: 9999px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+}
+
+/* ——— List ——— */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: 0;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+}
+
+.item + .item {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-on-accent);
+  background: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+
+.itemOwn .avatar,
+.avatarAccent {
+  background: var(--color-accent);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-height: 1.75rem;
+}
+
+.author {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.005em;
+}
+
+.youTag {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-accent);
+  padding: 0.05rem 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, var(--color-border));
+  border-radius: 4px;
+  line-height: 1.1;
+}
+
+.metaDot {
+  width: 3px;
+  height: 3px;
+  background: color-mix(in srgb, var(--color-text) 25%, transparent);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.date {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.edited {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* Группа действий — компактным pill сразу после meta-инфы, рядом с текстом.
+   Без абсолютного позиционирования: всегда близко к содержимому. */
+.actions {
+  display: inline-flex;
+  gap: 0.1rem;
+  padding: 0.1rem;
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+  border-radius: 6px;
+  opacity: 0.65;
+  transition: opacity 0.12s, background 0.12s;
+}
+
+.item:hover .actions,
+.item:focus-within .actions,
+.actions:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+
+.iconBtn:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.iconBtnDanger:hover {
+  color: var(--color-required);
+  background: color-mix(in srgb, var(--color-required) 10%, transparent);
+}
+
+.iconBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.body {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  line-height: 1.55;
+}
+
+/* ——— Empty ——— */
+
+.empty {
+  padding: 0.85rem 0;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+}
+
+/* ——— Composer ——— */
+
+.composer {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.composerField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 2.5rem;
+  max-height: 16rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.textarea::placeholder {
+  color: color-mix(in srgb, var(--color-text-secondary) 70%, transparent);
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+
+.composerFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.5rem;
+}
+
+.composerMeta {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1rem;
+  padding: 0 0.3rem;
+  font-size: 0.625rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+}
+
+.error {
+  color: var(--color-required);
+}
+
+.actionsRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btnGhost {
+  appearance: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  padding: 0.35rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+
+.btnGhost:hover:not(:disabled) {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+
+.btnGhost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnPrimary {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.1s, opacity 0.12s;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 88%, black);
+  border-color: color-mix(in srgb, var(--color-accent) 88%, black);
+}
+
+.btnPrimary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ——— Edit inline ——— */
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.15rem;
+}
+
+.readonlyStub {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding: 0.5rem 0;
+}
+
+@media (max-width: 640px) {
+  .actions {
+    opacity: 1;
+  }
+}
+
+/* Тач-устройства без hover: не прячем действия, чтобы были кликабельны. */
+@media (hover: none) {
+  .actions {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .section {
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+  }
+
+  .item {
+    grid-template-columns: 1.5rem 1fr;
+    gap: 0.65rem;
+    padding: 0.55rem 0;
+  }
+
+  .avatar {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.6875rem;
+  }
+
+  .composer {
+    grid-template-columns: 1.5rem 1fr;
+    gap: 0.65rem;
+  }
+
+  .textarea {
+    min-height: 3rem;
+    font-size: 1rem;
+  }
+
+  .composerFooter {
+    flex-wrap: wrap;
+  }
+
+  .kbd {
+    display: none;
+  }
+
+  .body {
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+}

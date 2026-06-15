@@ -1,0 +1,432 @@
+.section {
+  border: 1.5px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
+  border-radius: var(--radius);
+  overflow: visible;
+  background: var(--color-bg);
+}
+
+/* ── Header ─────────────────────────────────── */
+
+.header {
+  padding: 1rem 1.15rem 0.85rem;
+  background: color-mix(in srgb, var(--color-accent) 5%, var(--color-bg-secondary));
+  border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 18%, var(--color-border));
+  border-radius: var(--radius) var(--radius) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.icon {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.countBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  padding: 0.15rem 0.55rem;
+}
+
+/* ── Add participant ─────────────────────────── */
+
+.addWrap {
+  margin-left: auto;
+  position: relative;
+}
+
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed color-mix(in srgb, var(--color-accent) 50%, var(--color-border));
+  background: transparent;
+  color: var(--color-accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.addBtn:hover {
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  border-style: solid;
+}
+
+.addDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 100;
+  width: 280px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.addSearch {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.85rem;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  font-size: 0.875rem;
+  color: var(--color-text);
+  outline: none;
+}
+
+.addSearch::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.addList {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.addEmpty {
+  padding: 0.65rem 0.85rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.addMemberRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.addMemberRow:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-bg-secondary));
+}
+
+.addMemberRow:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.addAvatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--color-accent) 20%, var(--color-bg-secondary));
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.addMemberName {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addIcon {
+  flex-shrink: 0;
+  color: var(--color-accent);
+  opacity: 0.7;
+}
+
+.addSpinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Progress ───────────────────────────────── */
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progressBar {
+  flex: 1;
+  height: 6px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-accent) 15%, var(--color-border));
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    var(--color-accent),
+    color-mix(in srgb, var(--color-accent) 70%, var(--color-accent-secondary))
+  );
+  transition: width 0.4s ease;
+  min-width: 0;
+}
+
+.progressLabel {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.progressLabel strong {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.progressPct {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding-left: 0.2rem;
+  border-left: 1px solid var(--color-border);
+  margin-left: 0.1rem;
+}
+
+.propagationNote {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  opacity: 0.85;
+}
+
+/* ── Error ──────────────────────────────────── */
+
+.sectionError {
+  margin: 0;
+  padding: 0.5rem 1.15rem;
+  font-size: 0.8125rem;
+  color: var(--color-required);
+  background: color-mix(in srgb, var(--color-required) 6%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-required) 20%, transparent);
+}
+
+/* ── Groups ─────────────────────────────────── */
+
+.groups {
+  padding: 0.65rem 0;
+}
+
+.group {
+  padding: 0 0 0.35rem;
+}
+
+.group:not(:first-child) {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+}
+
+.groupLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  padding: 0.1rem 1.15rem 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.groupCount {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.groupDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot_completed { background: #22c55e; }
+.dot_inprogress { background: var(--color-accent); }
+.dot_pending { background: color-mix(in srgb, var(--color-text-secondary) 40%, transparent); }
+
+/* ── Member rows ─────────────────────────────── */
+
+.memberList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.4rem 1.15rem;
+  transition: background 0.1s;
+}
+
+.memberRow:hover {
+  background: color-mix(in srgb, var(--color-accent) 4%, var(--color-bg-secondary));
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: white;
+}
+
+.avatar_completed { background: color-mix(in srgb, #22c55e 85%, #16a34a); }
+.avatar_inprogress { background: var(--color-accent); }
+.avatar_pending { background: color-mix(in srgb, var(--color-text-secondary) 40%, var(--color-bg-secondary)); }
+
+.memberNameBtn {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.15s, color 0.15s;
+}
+
+.memberNameBtn:hover {
+  color: var(--color-accent);
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
+}
+
+.memberColumn {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.approveBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #22c55e;
+  background: color-mix(in srgb, #22c55e 10%, transparent);
+  color: #16a34a;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+
+.approveBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, #22c55e 20%, transparent);
+}
+
+.approveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.removeBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-text-secondary) 60%, transparent);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+
+.memberRow:hover .removeBtn {
+  opacity: 1;
+}
+
+.removeBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-required) 10%, transparent);
+  color: var(--color-required);
+}
+
+.removeBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

@@ -1,0 +1,150 @@
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-card);
+}
+
+.panelTitle {
+  margin: 0 0 0.35rem;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.panelDesc {
+  margin: 0 0 1.25rem;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.toggleList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.toggleRowText {
+  flex: 1;
+  min-width: 0;
+}
+
+.toggleRow:last-child {
+  border-bottom: none;
+}
+
+.toggleLabel {
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.toggleHint {
+  margin: 0.2rem 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+/* iOS/Android: сброс нативного вида кнопки, фиксированные пропорции «пилюли» */
+.switch {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 3rem;
+  min-width: 3rem;
+  height: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0.125rem;
+  margin: 0;
+  border: none;
+  border-radius: 0.875rem;
+  background: var(--color-border);
+  cursor: pointer;
+  justify-content: flex-start;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    justify-content var(--duration-fast) var(--ease-standard);
+}
+
+.switch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.switchOn {
+  background: var(--color-accent);
+  justify-content: flex-end;
+}
+
+.switchKnob {
+  display: block;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(13, 17, 23, 0.2);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.switchOn .switchKnob {
+  background: var(--color-on-accent);
+}
+
+.toggleRowStandalone {
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.toggleRowStandalone .toggleRow {
+  border-bottom: none;
+}
+
+.status {
+  font-size: var(--text-sm);
+  margin: 0.75rem 0 0;
+}
+
+.statusOk {
+  color: var(--color-success);
+}
+
+.statusError {
+  color: var(--color-error);
+}
+
+.statusMuted {
+  color: var(--color-text-secondary);
+}
+
+.savingBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin-left: 0.5rem;
+}

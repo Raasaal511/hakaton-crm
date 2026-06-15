@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build / output
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Cache
+.cache/
+*.cache
+
+# Backend
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/config/default.json
+backend/uploads/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/

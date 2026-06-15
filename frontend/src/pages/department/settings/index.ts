@@ -1,0 +1,1 @@
+export { DepartmentSettingsPage } from './DepartmentSettingsPage'

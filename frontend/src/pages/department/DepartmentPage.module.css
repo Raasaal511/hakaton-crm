@@ -1,0 +1,1051 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--color-page-bg);
+  overflow: hidden;
+  animation: fadeInPage 220ms ease-out;
+}
+
+/** Страница списка воронок раздела — нейтрально-серый фон вместо «молочного» */
+.departmentFunnelsOverview {
+  background: color-mix(in srgb, var(--color-border) 38%, var(--color-page-bg));
+}
+
+.departmentFunnelsOverview .pageHeader {
+  background: color-mix(in srgb, var(--color-bg) 92%, var(--color-border));
+}
+
+.pageHeader {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  padding: 1.5rem 2rem 1rem;
+  box-shadow: var(--shadow-sm);
+  overflow: visible;
+}
+
+.breadcrumb {
+  margin-bottom: 0.5rem;
+}
+
+.backNavButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+  border-radius: var(--radius-sm);
+}
+
+.backNavButton:hover {
+  color: var(--color-accent);
+}
+
+.backNavIcon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.breadcrumbItem {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.breadcrumbItem:hover {
+  color: var(--color-accent);
+}
+
+.titleSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  overflow: visible;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  min-width: 0;
+}
+
+.departmentLabel {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.titleBlock h1.title {
+  margin: 0;
+  cursor: default;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: visible;
+}
+
+.settingsBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.settingsBtn:hover {
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+
+.membersBtn,
+.tagsBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.membersBtn:hover,
+.tagsBtn:hover {
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+
+.error {
+  margin: 1rem 0 0;
+  color: var(--color-required);
+  font-size: 0.875rem;
+}
+
+.boardFiltersShell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin: 0;
+  z-index: 30;
+}
+
+.boardFiltersIconBtn {
+  position: relative;
+}
+
+.boardFiltersBtnOpen {
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+
+.boardFiltersHeaderDot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-bg);
+  pointer-events: none;
+}
+
+.boardFiltersPopover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  min-width: min(380px, calc(100vw - 2.5rem));
+  max-width: 480px;
+  padding: 0.75rem 0.85rem 0.8rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow:
+    0 4px 24px var(--color-popover-shadow),
+    0 0 0 1px color-mix(in srgb, var(--color-border) 50%, transparent);
+}
+
+.boardFiltersSheetHandle {
+  display: none;
+}
+
+.boardFiltersSheetBody {
+  display: block;
+}
+
+.boardFiltersSearchLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  margin-bottom: 0.65rem;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.boardFiltersSearchLabel:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.boardFiltersSearchIcon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  opacity: 0.85;
+}
+
+.boardFiltersSearchInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  /* 16px min: iOS Safari zooms focused inputs smaller than this */
+  font-size: 1rem;
+  color: var(--color-text);
+  outline: none;
+}
+
+.boardFiltersSearchInput::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.boardFiltersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 0.65rem 0.85rem;
+}
+
+.boardFilterBlock {
+  margin: 0;
+  min-width: 0;
+}
+
+.boardFilterBlockSort {
+  grid-column: 1 / -1;
+  padding-bottom: 0.85rem;
+  margin-bottom: 0.15rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.boardFilterHeading {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.boardFilterChecklist {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem 1.15rem;
+}
+
+.boardFilterDueRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  user-select: none;
+  min-height: 1.85rem;
+  padding: 0.15rem 0;
+}
+
+.boardFilterDueRow input {
+  width: 0.9rem;
+  height: 0.9rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.boardFiltersActions {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.boardFiltersPanelReset {
+  font-size: 0.8125rem !important;
+  padding: 0.35rem 0.55rem !important;
+  min-height: auto !important;
+}
+
+.boardWrapper {
+  flex: 1;
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.boardWithToday {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.boardMain {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.boardLayoutToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.boardListScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem;
+}
+
+.boardCalendarScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.board {
+  display: flex;
+  align-items: stretch;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  padding: 1rem 1rem 0 1rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.board::-webkit-scrollbar {
+  display: none;
+  height: 0;
+  width: 0;
+}
+
+.boardScrollbar {
+  flex-shrink: 0;
+  padding: 0.35rem 1rem 0.8rem;
+  background: transparent;
+}
+
+.boardScrollbarTrack {
+  height: 8px;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  border-radius: 999px;
+}
+
+.boardScrollbarThumb {
+  position: absolute;
+  top: 1px;
+  left: 0;
+  height: 6px;
+  min-width: 28px;
+  background: var(--color-accent-tint);
+  border-radius: 999px;
+  cursor: grab;
+  pointer-events: auto;
+  box-shadow: none;
+  transition: background 0.15s ease, opacity 0.15s ease;
+  opacity: 0.6;
+}
+
+.boardScrollbarThumb:hover {
+  background: var(--color-drag-indicator);
+  opacity: 1;
+}
+
+.boardScrollbarThumb:active {
+  cursor: grabbing;
+}
+
+.dragOverlay {
+  cursor: grabbing;
+  transform: rotate(2deg) scale(1.02);
+  box-shadow: 0 20px 40px var(--color-shadow-tint-15), 0 0 0 1px var(--color-accent-tint);
+  border-radius: var(--radius);
+  opacity: 0.98;
+  width: 288px;
+  pointer-events: none;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 1.125rem;
+  color: var(--color-text-secondary);
+}
+
+@keyframes fadeInPage {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    animation: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .boardCalendarScroll {
+    min-height: 0;
+  }
+
+  .page {
+    height: calc(100dvh - var(--app-mobile-header-height, 52px));
+    max-height: calc(100dvh - var(--app-mobile-header-height, 52px));
+  }
+
+  .pageHeader {
+    padding: 1rem;
+    padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+  }
+
+  .titleSection {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  /* Страница воронки: верх — «назад» и иконки, ниже — название на всю ширину */
+  .titleSection:has(.backNavButton) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 0.35rem;
+    column-gap: 0.75rem;
+  }
+
+  .titleSection:has(.backNavButton) .backNavButton {
+    order: 1;
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
+  .titleSection:has(.backNavButton) .headerActions {
+    order: 2;
+    margin-left: auto;
+    margin-bottom: 0;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+  }
+
+  .titleSection:has(.backNavButton) .titleBlock {
+    order: 3;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .titleSection:has(.backNavButton) > .error {
+    order: 4;
+    flex: 1 1 100%;
+    margin: 0;
+  }
+
+  .title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1.22;
+    letter-spacing: -0.025em;
+  }
+
+  .titleBlock h1.title {
+    margin: 0;
+  }
+
+  .headerActions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .boardFiltersPopover {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 100;
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    max-height: min(88dvh, calc(100dvh - var(--app-mobile-header-height, 52px) - 1.25rem));
+    padding: 0;
+    border-radius: 18px 18px 0 0;
+    box-shadow:
+      0 -10px 40px var(--color-popover-shadow),
+      0 0 0 1px color-mix(in srgb, var(--color-border) 45%, transparent);
+    animation: boardFiltersSheetIn 0.48s cubic-bezier(0.32, 0.72, 0, 1) both;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bottomSheetDragTransition {
+    transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .bottomSheetDragTransitionDragging {
+    transition: none;
+  }
+
+  .boardFiltersSheetHandle {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 2.75rem;
+    padding: 0.55rem 1rem 0.35rem;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .boardFiltersSheetHandle:active {
+    cursor: grabbing;
+  }
+
+  .boardFiltersSheetHandleBar {
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-text-secondary) 28%, var(--color-border));
+    box-shadow: inset 0 1px 0 var(--color-inset-top-strong);
+  }
+
+  .boardFiltersSheetBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 1rem 1.1rem;
+    padding-bottom: calc(1.1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .boardFiltersSearchLabel {
+    margin-bottom: 0.85rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 10px;
+  }
+
+  .boardFiltersGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem 0;
+  }
+
+  .boardFilterHeading {
+    font-size: 0.6875rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .boardFilterBlockSort {
+    padding-bottom: 1rem;
+    margin-bottom: 0;
+    border-bottom: none;
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-border) 88%, transparent);
+  }
+
+  .boardFilterChecklist {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+
+  .boardFilterDueRow {
+    min-height: 2.75rem;
+    padding: 0.5rem 0.65rem;
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 11px;
+    background: var(--color-bg-secondary);
+    border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+    box-sizing: border-box;
+  }
+
+  .boardFilterDueRow input {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+
+  .boardFiltersActions {
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+  }
+
+  .boardListScroll {
+    padding: 0.75rem 0.85rem;
+    padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .board {
+    padding: 0.75rem 0.85rem 0;
+    gap: 0.85rem;
+  }
+}
+
+@keyframes boardFiltersSheetIn {
+  from {
+    transform: translateY(calc(36px + env(safe-area-inset-bottom, 0px)));
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .boardFiltersPopover {
+    animation: none;
+  }
+
+  .listCreateSheetPanel {
+    animation: none;
+  }
+
+  .bottomSheetDragTransition {
+    transition: none;
+  }
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modalOverlay {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-text) 25%, transparent);
+}
+
+.modalContent {
+  position: relative;
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 1.5rem;
+  max-width: 28rem;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* —— Мобильный список воронки: FAB и нижняя панель создания задачи —— */
+@media (max-width: 768px) {
+  .boardListScrollFabPad {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .listCreateFab {
+    position: fixed;
+    right: calc(1.05rem + env(safe-area-inset-right, 0px));
+    bottom: calc(1.05rem + env(safe-area-inset-bottom, 0px));
+    z-index: 95;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.625rem;
+    height: 3.625rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: var(--color-on-accent);
+    isolation: isolate;
+    background: linear-gradient(
+      155deg,
+      var(--color-accent-glass-edge) 0%,
+      var(--color-accent) 42%,
+      color-mix(in srgb, var(--color-accent-secondary) 35%, var(--color-accent)) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 var(--color-inset-top),
+      0 10px 40px color-mix(in srgb, var(--color-accent) 36%, transparent),
+      0 4px 14px var(--color-shadow-tint-12),
+      0 0 0 1px color-mix(in srgb, var(--color-accent) 40%, var(--color-inset-ring));
+    transition:
+      transform 0.34s cubic-bezier(0.32, 0.72, 0, 1),
+      box-shadow 0.34s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .listCreateFab::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(180deg, var(--color-glass-shine) 0%, transparent 48%);
+  }
+
+  .listCreateFab svg {
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 1px 1px var(--color-shadow-tint-12));
+  }
+
+  .listCreateFab:hover {
+    box-shadow:
+      inset 0 1px 0 var(--color-inset-top),
+      0 14px 48px color-mix(in srgb, var(--color-accent) 44%, transparent),
+      0 6px 18px var(--color-shadow-tint-12),
+      0 0 0 1px color-mix(in srgb, var(--color-accent) 35%, var(--color-border));
+  }
+
+  .listCreateFab:active {
+    transform: scale(0.92);
+    box-shadow:
+      inset 0 1px 0 var(--color-inset-top),
+      0 6px 24px color-mix(in srgb, var(--color-accent) 32%, transparent),
+      0 2px 8px var(--color-shadow-tint-12),
+      0 0 0 1px color-mix(in srgb, var(--color-accent) 45%, var(--color-inset-ring));
+  }
+
+  .listCreateFab:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 1px 0 var(--color-inset-top),
+      0 10px 40px color-mix(in srgb, var(--color-accent) 36%, transparent),
+      0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--color-accent) 40%, var(--color-inset-ring));
+  }
+
+  .listCreateSheetRoot {
+    position: relative;
+    z-index: 100;
+  }
+
+  .listCreateSheetPanel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    max-height: min(
+      93dvh,
+      calc(100dvh - var(--app-mobile-header-height, 52px) - 0.25rem)
+    );
+    padding: 0 0 calc(0.35rem + env(safe-area-inset-bottom, 0px));
+    border-radius: 24px 24px 0 0;
+    border: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
+    border-bottom: none;
+    background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+    backdrop-filter: blur(20px) saturate(1.25);
+    -webkit-backdrop-filter: blur(20px) saturate(1.25);
+    box-shadow:
+      inset 0 0 0 1px var(--color-inset-ring-faint),
+      0 -20px 56px var(--color-shadow-tint-12),
+      0 -8px 28px var(--color-shadow-tint-12);
+    animation: listCreateSheetIn 0.52s cubic-bezier(0.32, 0.72, 0, 1) both;
+    overflow: hidden;
+  }
+
+  .listCreateSheetHandle {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    min-height: 2.85rem;
+    padding: 0.55rem 1rem 0.25rem;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+  }
+
+  .listCreateSheetHandle::before {
+    content: '';
+    position: absolute;
+    top: 0.45rem;
+    left: 12%;
+    right: 12%;
+    height: 3px;
+    border-radius: 0 0 999px 999px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--color-accent) 55%, transparent),
+      var(--color-accent),
+      color-mix(in srgb, var(--color-accent-secondary) 40%, var(--color-accent)),
+      transparent
+    );
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  .listCreateSheetHandle:active {
+    cursor: grabbing;
+  }
+
+  .listCreateSheetHandleBar {
+    width: 48px;
+    height: 5px;
+    border-radius: 999px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-text-secondary) 22%, var(--color-border)),
+      color-mix(in srgb, var(--color-text-secondary) 38%, var(--color-border))
+    );
+    box-shadow: inset 0 1px 0 var(--color-inset-top-medium);
+    position: relative;
+    z-index: 1;
+  }
+
+  .listCreateSheetHead {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.85rem;
+    margin: 0 0.65rem 0.45rem;
+    padding: 0.85rem 1rem 0.95rem;
+    border-radius: 16px;
+    border: 1px solid color-mix(in srgb, var(--color-border) 68%, transparent);
+    background: linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--color-accent) 9%, var(--color-bg)) 0%,
+      color-mix(in srgb, var(--color-bg) 96%, var(--color-accent)) 100%
+    );
+    box-shadow: inset 0 1px 0 var(--color-inset-top-subtle);
+  }
+
+  .listCreateSheetHeadText {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .listCreateSheetTitle {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.028em;
+    line-height: 1.18;
+    background: linear-gradient(
+      105deg,
+      var(--color-text) 0%,
+      color-mix(in srgb, var(--color-text) 82%, var(--color-accent)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  @supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+    .listCreateSheetTitle {
+      color: var(--color-text);
+      background: none;
+    }
+  }
+
+  .listCreateSheetSubtitle {
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.28rem 0.6rem;
+    max-width: 100%;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-text-secondary) 8%, var(--color-bg-secondary));
+    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+  }
+
+  .listCreateSheetColumnField {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+
+  .listCreateSheetFieldLabel {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--color-text-secondary) 92%, var(--color-accent));
+  }
+
+  .listCreateSheetClose {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.55rem;
+    height: 2.55rem;
+    margin: -0.15rem -0.2rem 0 0;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--color-bg) 80%, transparent);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition:
+      background var(--duration-fast) var(--ease-standard),
+      color var(--duration-fast) var(--ease-standard),
+      border-color var(--duration-fast) var(--ease-standard),
+      transform 0.15s ease;
+    box-shadow: inset 0 1px 0 var(--color-inset-top-faint);
+  }
+
+  .listCreateSheetClose:hover {
+    background: var(--color-bg-secondary);
+    border-color: color-mix(in srgb, var(--color-accent) 22%, var(--color-border));
+    color: var(--color-text);
+  }
+
+  .listCreateSheetClose:active {
+    transform: scale(0.96);
+  }
+
+  .listCreateSheetClose:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+
+  .listCreateSheetBody {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-top: 0.35rem;
+    padding: 1.05rem 1.1rem 1.25rem;
+    -webkit-overflow-scrolling: touch;
+    background:
+      radial-gradient(
+        ellipse 85% 45% at 50% -12%,
+        color-mix(in srgb, var(--color-accent) 10%, transparent),
+        transparent 55%
+      ),
+      linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-secondary) 100%);
+    border-top: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+  }
+}
+
+@keyframes listCreateSheetIn {
+  from {
+    transform: translateY(calc(44px + env(safe-area-inset-bottom, 0px)));
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

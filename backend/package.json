@@ -1,0 +1,39 @@
+{
+  "scripts": {
+    "dev": "npx tsx watch ./src/index.ts",
+    "set-root": "npx tsx scripts/set-root.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed-migrations": "npx tsx scripts/seed-drizzle-migrations.ts",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@fastify/multipart": "^9.4.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "bcrypt": "^6.0.0",
+    "config": "^3.3.12",
+    "dotenv": "^17.3.1",
+    "drizzle-kit": "^0.31.9",
+    "drizzle-orm": "^0.45.1",
+    "fastify": "^5.7.4",
+    "file-type": "^19.6.0",
+    "inversify": "^6.2.2",
+    "jsonwebtoken": "^9.0.3",
+    "jwks-rsa": "^3.1.0",
+    "pg": "^8.18.0",
+    "reflect-metadata": "^0.2.2",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/config": "^3.3.5",
+    "@types/dotenv": "^6.1.1",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/pg": "^8.16.0",
+    "@types/web-push": "^3.6.4",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,322 @@
+.container {
+  position: relative;
+  display: inline-block;
+}
+
+.containerLarge {
+  width: 100%;
+  display: block;
+}
+
+.containerLarge .trigger {
+  width: 100%;
+  min-width: unset;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+}
+
+.containerLarge .triggerText {
+  max-width: none;
+}
+
+.containerLarge .menu {
+  width: 100%;
+  min-width: 100%;
+  max-width: none;
+  max-height: 320px;
+}
+
+.containerLarge .menuList {
+  max-height: 260px;
+}
+
+.containerLarge .searchInput {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+}
+
+.containerLarge .item {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+}
+
+.menuPortalLarge .itemAvatar {
+  width: 22px;
+  height: 22px;
+  font-size: 0.6rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 120px;
+}
+
+.trigger:hover {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-light);
+  color: var(--color-text);
+}
+
+.triggerText {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  font-size: 0.6rem;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  z-index: 40;
+  min-width: 180px;
+  max-width: 220px;
+  max-height: 240px;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Menu is portaled to body; position/top/left come from inline fixed coords */
+.menuPortal {
+  box-sizing: border-box;
+  transition: opacity 0.12s ease-out;
+}
+
+/* Was .containerLarge .menu — portal is outside container; width set inline from trigger rect */
+.menuPortalLarge {
+  max-width: none;
+  max-height: 320px;
+}
+
+.menuPortalLarge .menuList {
+  max-height: 260px;
+}
+
+.menuPortalLarge .searchInput {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+}
+
+.menuPortalLarge .item {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+}
+
+/* Роли и другие пункты с длинным описанием: шире меню, крупнее типографика */
+.menuPortalRich {
+  padding: 0.5rem;
+  max-height: min(78vh, 640px);
+}
+
+.menuPortalRich .menuList {
+  max-height: min(62vh, 520px);
+}
+
+.menuPortalRich .searchInput {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.menuPortalRich .item {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.menuPortalRich .itemWithDescription {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.menuPortalRich .itemWithDescription .itemLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.menuPortalRich .itemDescription {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.menuPortalRich .emptyState {
+  font-size: 0.8125rem;
+  padding: 0.625rem;
+}
+
+/* Фиксированная высота из JS (viewport): список прокручивается, пункты не уезжают под край окна */
+.menuViewportBoxed {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.menuViewportBoxed .menuList {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+}
+
+.menuPortalLarge.menuPortalRich .item {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.menuPortalLarge.menuPortalRich .searchInput {
+  font-size: 0.875rem;
+}
+
+.menuList {
+  overflow-y: auto;
+  max-height: 180px;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+}
+
+.searchInput {
+  flex-shrink: 0;
+  width: 100%;
+  padding: 0.375rem 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: var(--color-accent-border);
+  box-shadow: var(--shadow-focus);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-disabled);
+}
+
+.emptyState {
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-disabled);
+  text-align: center;
+}
+
+.item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.itemHasAvatar {
+  gap: 0.4rem;
+}
+
+.itemAvatar {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent);
+  color: white;
+  font-size: 0.55rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.itemWithDescription.itemHasAvatar {
+  align-items: flex-start;
+}
+
+.itemWithDescription.itemHasAvatar .itemAvatar {
+  margin-top: 0.15rem;
+}
+
+.item:hover {
+  background: var(--color-bg-secondary);
+}
+
+.itemActive {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+}
+
+.itemLabel {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  align-items: stretch;
+}
+
+.item:not(.itemWithDescription) .itemMain .itemLabel {
+  white-space: nowrap;
+}
+
+.itemWithDescription {
+  align-items: flex-start;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.itemWithDescription .itemLabel {
+  white-space: normal;
+  font-weight: 500;
+}
+
+.itemDescription {
+  font-size: 0.65rem;
+  line-height: 1.35;
+  color: var(--color-text-secondary);
+}
+
+.itemCheck {
+  font-size: 0.75rem;
+}
+

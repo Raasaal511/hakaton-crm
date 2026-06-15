@@ -1,0 +1,1 @@
+export { CreateDepartmentForm } from './ui'

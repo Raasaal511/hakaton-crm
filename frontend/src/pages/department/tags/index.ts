@@ -1,0 +1,1 @@
+export { DepartmentTagsPage } from './DepartmentTagsPage'

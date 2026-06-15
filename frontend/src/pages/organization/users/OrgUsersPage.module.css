@@ -1,0 +1,601 @@
+.wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 1.5rem 2rem 2rem;
+  box-sizing: border-box;
+  height: auto;
+  animation: fadeInPage 220ms ease-out;
+}
+
+.header {
+  flex-shrink: 0;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.title {
+  margin: 0 0 0.35rem;
+  font-size: 1.625rem;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.loading {
+  /* Для центрального лоадера на весь экран */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  background: var(--color-bg-secondary);
+  border-radius: 12px;
+  width: 100%;
+}
+
+.error {
+  padding: 1rem 1.25rem;
+  text-align: center;
+  color: var(--color-required);
+  font-size: 0.9375rem;
+  background: var(--color-required-bg);
+  border-radius: 10px;
+  border: 1px solid var(--color-danger-border-soft);
+  margin-bottom: 1.5rem;
+}
+
+.syncMessage {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+/* Forbidden state */
+.forbidden {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--color-bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.forbidden .title {
+  margin-bottom: 0.5rem;
+}
+
+.forbidden .text {
+  margin: 0 0 1.25rem;
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.backLink {
+  font-size: 0.9375rem;
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.backLink:hover {
+  color: var(--color-accent-hover);
+}
+
+/* Table container — теперь растягивается по контенту */
+.tableWrap {
+  /* Убрали flex: 1 и overflow: hidden, чтобы блок рос по высоте */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border);
+  overflow: visible; 
+  animation: fadeInUp 260ms ease-out;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  width: 100%;
+}
+
+.tableWrapInner {
+  /* Убрали overflow: auto и flex: 1, чтобы не было внутреннего скролла */
+  width: 100%;
+  overflow: visible;
+}
+
+.table {
+  width: 100%;
+  /* table-layout: auto позволяет колонкам лучше распределять ширину */
+  table-layout: auto; 
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.thUser,
+.tdUser {
+  /* Убрали жесткую ширину, пусть контент определяет размер, но с минимумом */
+  min-width: 200px;
+  padding: 0;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.thEmail,
+.tdEmail {
+  /* Убрали жесткий процент */
+  min-width: 250px;
+  padding: 0.875rem 1rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tdEmail {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thRole,
+.tdRole {
+  width: 140px;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.thDepts,
+.tdDepts {
+  /* Занимает все оставшееся место */
+  width: 100%; 
+  padding: 0.875rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.thActions,
+.tdActions {
+  white-space: nowrap;
+  padding: 0.875rem 1rem;
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+  width: 90px;
+}
+
+.selectAllCheckbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.userSelectCheckbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.deleteIconBtn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  /* Цвет явно задаем, чтобы иконка не сливалась с фоном. */
+  color: black !important;
+  background: transparent;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.deleteIconBtn:hover:not(:disabled) {
+  background: var(--color-danger-bg);
+  transform: translateY(-1px);
+}
+
+.deleteIconBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+thead tr {
+  background: var(--color-bg-secondary);
+}
+
+thead .thUser {
+  padding: 0.75rem 1rem 0.75rem 1.25rem;
+}
+
+thead .thEmail,
+thead .thRole,
+thead .thDepts {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Rows */
+.row {
+  transition: background 0.15s;
+}
+
+.row:hover {
+  background: var(--color-accent-light);
+}
+
+.row:last-child .tdUser,
+.row:last-child .tdEmail,
+.row:last-child .tdRole,
+.row:last-child .tdDepts {
+  border-bottom: none;
+}
+
+/* User cell with avatar */
+.tdUser {
+  padding: 0.75rem 1rem 0.75rem 1.25rem;
+}
+
+.userCell {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: -0.02em;
+}
+
+.userName {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Org role badges */
+.orgRoleBadge,
+.orgRoleBadgeHighlight {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.orgRoleBadge {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+}
+
+.orgRoleBadgeHighlight {
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+}
+
+/* Department list */
+.noDepts {
+  font-size: 0.8125rem;
+  color: var(--color-text-disabled);
+  font-style: normal;
+}
+
+.deptList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.deptItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  max-width: 100%;
+}
+
+.deptLink {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: color 0.15s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes fadeInPage {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.deptLink:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
+.deptRoleBadge,
+.deptRoleBadgeAdmin {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.deptRoleBadge {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+}
+
+.deptRoleBadgeAdmin {
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+}
+
+.actionsCell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.roleTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  min-width: 11rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  padding: 0.45rem 0.75rem;
+  background: var(--color-accent-light);
+  border-radius: 8px;
+  border: 1px solid var(--color-accent-border);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.roleTrigger:hover {
+  background: var(--color-accent-secondary-light);
+}
+
+.roleTriggerText {
+  line-height: 1.2;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+}
+
+.roleTriggerIcon {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.mobileUserList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.mobileUserCard {
+  padding: 1rem 1.05rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.mobileUserTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.mobileUserMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.mobileUserEmail {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.mobileUserSection {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+}
+
+.mobileUserSectionLabel {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.45rem;
+}
+
+.mobileUserSectionBody {
+  min-width: 0;
+}
+
+.mobileUserSectionBody .roleTrigger {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mobileDeptList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.mobileDeptChip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.mobileUserActions {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+  display: flex;
+  justify-content: stretch;
+}
+
+.mobileUserActions :global(button) {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 1rem 1rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    min-height: 0;
+  }
+
+  .title {
+    font-size: 1.35rem;
+  }
+
+  .subtitle {
+    font-size: 0.875rem;
+  }
+
+  .tableWrap {
+    margin: 0;
+    padding: 0;
+    overflow-x: visible;
+  }
+
+  .headerActions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .headerActions :global(button) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .headerActionBtn {
+    width: 100%;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .roleTrigger {
+    min-width: 0;
+    width: 100%;
+  }
+}

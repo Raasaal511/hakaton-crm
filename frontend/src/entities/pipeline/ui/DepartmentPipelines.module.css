@@ -1,0 +1,272 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0.75rem 2rem 1.25rem;
+  gap: 1rem;
+  background: transparent;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.card {
+  position: relative;
+  text-align: left;
+  padding: 0.85rem 0.95rem;
+  padding-right: 2.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 92%, var(--color-text-secondary));
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease,
+    background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card:focus-visible {
+  outline: none;
+  border-color: var(--color-accent-border);
+  box-shadow: 0 0 0 2px var(--color-accent-tint);
+}
+
+.cardStarBtn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-disabled);
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease,
+    transform 0.12s ease,
+    filter 0.16s ease,
+    opacity 0.16s ease;
+  opacity: 0;
+}
+
+.card:hover .cardStarBtn,
+.card:focus-within .cardStarBtn,
+.cardStarBtnActive {
+  opacity: 1;
+}
+
+.cardStarBtn:hover {
+  background: color-mix(in srgb, var(--color-warning-bg) 75%, transparent);
+  color: var(--color-warning);
+  transform: scale(1.08);
+}
+
+.cardStarBtn:active {
+  transform: scale(0.92);
+}
+
+.cardStarBtn:focus-visible {
+  outline: none;
+  opacity: 1;
+  box-shadow: 0 0 0 3px var(--color-star-ring-strong);
+}
+
+.cardStarBtnActive {
+  color: var(--color-warning);
+  filter: drop-shadow(0 0 6px var(--color-star-glow-strong));
+}
+
+.cardStarBtnActive:hover {
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning-bg) 60%, transparent);
+  filter: drop-shadow(0 0 7px var(--color-star-glow));
+}
+
+.cardStarBtn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  pointer-events: none;
+}
+
+.cardStarIcon {
+  display: block;
+}
+
+.cardStarIconFilled {
+  filter: drop-shadow(0 1px 1px var(--color-favorite-glow));
+}
+
+.card:hover {
+  border-color: var(--color-accent-border);
+  box-shadow: 0 8px 20px var(--color-shadow-tint-12);
+  transform: translateY(-1px);
+}
+
+.cardActive {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-light);
+  box-shadow: var(--shadow-accent);
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cardBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-neutral-chip-bg);
+  color: var(--color-text-secondary);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.cardName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardCreate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px dashed var(--color-border);
+  background: transparent;
+  color: var(--color-accent);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.cardCreate:hover {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-light);
+  transform: translateY(-1px);
+}
+
+.cardCreatePlus {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.cardCreateText {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cardCreateHint {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.1rem;
+}
+
+.loading {
+  padding: 0.75rem 2rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 0.65rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .title {
+    font-size: 1.0625rem;
+  }
+
+  .subtitle {
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .card {
+    padding: 1rem 1rem;
+    padding-right: 2.65rem;
+    border-radius: 14px;
+    box-shadow: var(--shadow-card);
+    background: var(--color-bg);
+  }
+
+  .card:active {
+    transform: scale(0.99);
+  }
+
+  .cardName {
+    white-space: normal;
+    line-height: 1.35;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}

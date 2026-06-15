@@ -1,0 +1,828 @@
+.container {
+  width: 100%;
+}
+
+.containerDrawer {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.85rem 0.85rem 0.85rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.cardDrawer {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  gap: 1.25rem;
+  background: transparent;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fieldBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fieldLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.titleInput {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  padding: 0.55rem 0.85rem;
+  min-height: 2.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+}
+
+.titleInputDrawer {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  padding: 0.7rem 0.95rem;
+  min-height: 2.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+}
+
+.titleInputDrawer:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.descriptionInput {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 7.5rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.descriptionInput::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.85;
+}
+
+.descriptionInput:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.descriptionEditorMount {
+  width: 100%;
+  min-height: 0;
+}
+
+.cardDrawer .descriptionEditorMount {
+  flex: 1;
+  min-height: 240px;
+}
+
+.descriptionEditorLoading {
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg-secondary);
+}
+
+.titleInput::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.titleInput:focus {
+  outline: none;
+  border-color: var(--color-accent-border);
+  box-shadow: var(--shadow-focus);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.75rem;
+}
+
+.cardDrawer .toolbar {
+  margin-bottom: 0;
+}
+
+/* Блок исполнителей: отдельная строка под метками/датой (карточка создания и так узкая) */
+.assigneesBlock {
+  position: relative;
+  flex: 0 1 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.assigneesBlockRaised {
+  z-index: 30;
+}
+
+.assigneesToolbarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.assigneesToolbarRow .pillButton {
+  padding: 0.32rem 0.62rem;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+}
+
+.assigneesToolbarRow .pillButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.assigneesSelected {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.assigneesSummaryAnchor {
+  position: relative;
+  width: 100%;
+  align-self: flex-start;
+}
+
+.assigneesExpandedPanel {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 0.4rem;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.45rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+}
+
+.assigneesExpandedPanel .assigneesList {
+  border: none;
+  background: var(--color-bg-secondary);
+}
+
+/* Компактный столбец: ширина по самому длинному имени, не на всю карточку */
+.assigneesList {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  max-height: 10rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  box-shadow: inset 0 1px 0 var(--color-inset-top-subtle);
+}
+
+.assigneeRow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 1.75rem;
+  max-width: 100%;
+  padding: 0.3rem 0.45rem 0.3rem 0.4rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+}
+
+.assigneeRow:last-child {
+  border-bottom: none;
+}
+
+.assigneeRow:hover {
+  background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+}
+
+.assigneeRowAvatar {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-secondary),
+    color-mix(in srgb, var(--color-accent) 80%, var(--color-accent-secondary))
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.5625rem;
+  font-weight: 700;
+}
+
+.assigneeRowName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assigneeRowRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: color-mix(in srgb, var(--color-text) 55%, var(--color-text-secondary));
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.assigneeRowRemove:hover {
+  color: var(--color-required);
+  background: color-mix(in srgb, var(--color-required) 10%, transparent);
+}
+
+.assigneesSummaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  padding: 0.35rem 0.62rem 0.35rem 0.45rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.12s;
+}
+
+.assigneesSummaryBtn:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, var(--color-border));
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.assigneesSummaryBtn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.assigneesSummaryStack {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.assigneesSummaryAvatar {
+  width: 22px;
+  height: 22px;
+  margin-left: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-secondary),
+    color-mix(in srgb, var(--color-accent) 80%, var(--color-accent-secondary))
+  );
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+.assigneesSummaryAvatar:first-child {
+  margin-left: 0;
+}
+
+.assigneesSummaryExtra {
+  width: 22px;
+  height: 22px;
+  margin-left: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--color-bg-secondary) 100%, transparent);
+  color: var(--color-text-secondary);
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.assigneesSummaryLabel {
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.assigneesSummaryChevron {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  opacity: 0.55;
+  margin-left: 0.1rem;
+  transition: transform 0.18s ease;
+}
+
+.assigneesSummaryChevronOpen {
+  transform: rotate(180deg);
+}
+
+.tagsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.pillButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 0.3rem;
+  min-height: 2.25rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pillButton:hover {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-light);
+  color: var(--color-text);
+}
+
+.pillButton:focus {
+  outline: none;
+}
+
+.pillButton:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0.2rem 0.45rem;
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.tagRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.65rem;
+  min-height: 1.65rem;
+  padding: 0;
+  margin: 0;
+  margin-right: -0.15rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.05rem;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.tagRemove:hover {
+  opacity: 1;
+}
+
+.tagRemove:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.optionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+}
+
+.optionLabel {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.dateInput {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.select {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.dropdown {
+  margin-top: 0.25rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 0.5rem;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.dropdownTitle {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.dropdownItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dropdownItem:hover {
+  background: var(--color-bg-secondary);
+}
+
+.dropdownItemActive {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+}
+
+.tagsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tagItem {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.tagItem input {
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.actionsDrawer {
+  margin-top: 0.85rem;
+  padding-top: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  row-gap: 0.5rem;
+}
+
+.actionsDrawer .drawerActionBtn {
+  min-height: 2.5rem;
+  padding: 0.65rem 1.15rem;
+  font-size: 0.9375rem;
+}
+
+.error {
+  color: var(--color-required);
+  font-size: 0.75rem;
+}
+
+.attachmentsBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.attachInputHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.attachDropZone {
+  border-radius: var(--radius);
+  border: 1px dashed color-mix(in srgb, var(--color-border) 92%, transparent);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--color-accent) 5%, var(--color-bg-secondary)) 0%,
+    var(--color-bg-secondary) 100%
+  );
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.attachDropZoneActive {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 9%, var(--color-bg-secondary));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+
+.attachDropInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.85rem;
+  padding: 0.85rem 1rem;
+}
+
+.attachDropIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-bg));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 22%, var(--color-border));
+  flex-shrink: 0;
+}
+
+.attachDropText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 160px;
+}
+
+.attachDropTitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.attachDropHint {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.attachPickBtn {
+  margin-left: auto;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  background: var(--color-bg);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, var(--color-border));
+  border-radius: 9999px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.12s;
+}
+
+.attachPickBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-bg));
+}
+
+.attachPickBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.attachPickBtn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.pendingFilesList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pendingFileRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  font-size: 0.75rem;
+}
+
+.pendingFileName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+
+.pendingFileSize {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.pendingFileRemove {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 0.35rem;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, var(--color-text) 55%, var(--color-text-secondary));
+  font-size: 1.45rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.pendingFileRemove:hover:not(:disabled) {
+  color: var(--color-required);
+}
+
+.pendingFileRemove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.draftBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, var(--color-border));
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+.draftClearBtn {
+  flex-shrink: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 0.8125rem;
+  color: var(--color-accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.draftClearBtn:hover {
+  opacity: 0.75;
+}
+
+.broadcastToggleActive {
+  background: color-mix(in srgb, var(--color-accent) 15%, var(--color-bg-secondary));
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.broadcastToggleActive:hover {
+  background: color-mix(in srgb, var(--color-accent) 22%, var(--color-bg-secondary));
+}
+
+.broadcastPreview {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, var(--color-border));
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}

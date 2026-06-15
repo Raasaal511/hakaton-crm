@@ -1,0 +1,21 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 3000,
+    "cors": ["http://localhost:3000"],
+    "apiPrefix": "api",
+    "apiVersion": "1.0.0"
+  },
+  "db": {
+    "host": "localhost",
+    "port": 5432,
+    "user": "postgres",
+    "password": "",
+    "database": "postgres"
+  },
+  "jwt": {
+    "token": "secret",
+    "expiresIn": "30d"
+  },
+  "webPushEnv": "Optional: set WEB_PUSH_VAPID_PUBLIC_KEY, WEB_PUSH_VAPID_PRIVATE_KEY, WEB_PUSH_SUBJECT (mailto:...) for task push notifications"
+}

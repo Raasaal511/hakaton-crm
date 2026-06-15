@@ -1,0 +1,350 @@
+.anchorWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.popoverFloating {
+  /* Позиция задаётся inline-стилями из TaskDateRangePopover (fixed + top/left),
+     чтобы календарь всплывал поверх колонки и не вызывал скролл.
+     z-index выше, чем у drawer создания задачи (10000) и модалок. */
+  z-index: 10050;
+  max-width: calc(100vw - 1.5rem);
+  max-height: calc(100dvh - 1rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.popover {
+  width: min(calc(100vw - 1.5rem), 19.5rem);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-lg), var(--shadow-card);
+  padding: 0.45rem 0.5rem 0.45rem;
+  color: var(--color-text);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin-bottom: 0.3rem;
+}
+
+.monthLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navGroup {
+  display: flex;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.navBtn:hover {
+  border-color: var(--color-accent-border);
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+
+.monthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.02rem 0;
+  margin-bottom: 0.3rem;
+}
+
+.weekday {
+  font-size: 0.55rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 0.02rem 0 0.12rem;
+  letter-spacing: 0.02em;
+}
+
+.cell {
+  position: relative;
+  height: 1.55rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  border-radius: 4px;
+  z-index: 2;
+}
+
+.cellDisabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+.cellDisabled .dayNum {
+  color: var(--color-text-secondary);
+}
+
+.track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1.12rem;
+  background: var(--color-accent-tint);
+  pointer-events: none;
+}
+
+.trackSingle {
+  margin-left: 0.1rem;
+  margin-right: 0.1rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent) 22%, var(--color-accent-light));
+}
+
+.trackStart {
+  margin-left: 0.1rem;
+  border-radius: 999px 0 0 999px;
+}
+
+.trackEnd {
+  margin-right: 0.1rem;
+  border-radius: 0 999px 999px 0;
+}
+
+.trackMiddle {
+  border-radius: 0;
+}
+
+.dayNum {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.cellOutside .dayNum {
+  color: var(--color-text-disabled);
+  opacity: 0.72;
+}
+
+.capStart .dayNum,
+.capEnd .dayNum,
+.capSingle .dayNum {
+  width: 1.22rem;
+  height: 1.22rem;
+  margin: 0 auto;
+  border-radius: 999px;
+  color: var(--color-on-accent);
+  font-weight: 600;
+  font-size: 0.65rem;
+}
+
+.capStart .dayNum,
+.capSingle .dayNum {
+  background: var(--color-accent);
+}
+
+.capEnd .dayNum {
+  background: var(--color-accent);
+  box-shadow:
+    0 0 0 2px var(--color-bg),
+    0 0 0 3px var(--color-accent);
+}
+
+.footerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.footer {
+  flex: 1;
+  min-width: 8rem;
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.saveBtn {
+  padding: 0.28rem 0.5rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  transition: background 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.saveBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+.saveBtn:active {
+  transform: scale(0.99);
+}
+
+.cancelBtn {
+  padding: 0.28rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+  transition: border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.cancelBtn:hover {
+  border-color: var(--color-accent-border);
+  background: var(--color-bg);
+}
+
+.timeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.35rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.timeSectionPlaceholder {
+  opacity: 0.72;
+}
+
+.timeSectionHint {
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: var(--color-text-secondary);
+}
+
+.timeModeToggle {
+  display: flex;
+  padding: 0.12rem;
+  gap: 0.12rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.timeModeBtn {
+  flex: 1;
+  padding: 0.28rem 0.35rem;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.timeModeBtn:hover:not(:disabled) {
+  color: var(--color-text);
+}
+
+.timeModeBtnActive {
+  background: var(--color-bg);
+  color: var(--color-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.timeFieldsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.timeField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.timeFieldLabel {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.timeInput {
+  width: 100%;
+  padding: 0.32rem 0.45rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.timeInput:focus {
+  outline: none;
+  border-color: var(--color-accent-border);
+  background: var(--color-bg);
+}
+
+.timeInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -1,0 +1,1181 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+  background: var(--color-bg);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.toolbarNav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+
+.toolbarPeriod {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(100%, 14rem);
+}
+
+.toolbarTitleBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0.3rem 0.45rem;
+  min-width: 0;
+  max-width: 100%;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.toolbarTitleBtn:hover {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+}
+
+.toolbarTitleBtn[aria-expanded='true'] {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent-border);
+}
+
+.toolbarTitleText {
+  min-width: 0;
+  text-align: center;
+}
+
+.toolbarTitleChevron {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  transition: transform 0.2s ease, color 0.15s;
+}
+
+.toolbarTitleBtn:hover .toolbarTitleChevron,
+.toolbarTitleBtn[aria-expanded='true'] .toolbarTitleChevron {
+  color: var(--color-accent);
+}
+
+.toolbarTitleChevronOpen {
+  transform: rotate(180deg);
+}
+
+.navBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.125rem;
+  height: 2.125rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+
+.navBtn:hover {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-light);
+  color: var(--color-text);
+}
+
+.todayBtn {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  background: var(--color-surface);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+
+.todayBtn:hover {
+  border-color: var(--color-accent-border);
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+
+.toolbarActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.modeDropdown {
+  flex-shrink: 0;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.rootDayMode {
+  min-height: 0;
+}
+
+.bodyDayMode {
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.gridWrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  background: var(--color-surface);
+}
+
+/* Блок дней недели — фирменный светло-синий фон */
+.weekHeader {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 0.5rem 0.65rem 0.55rem;
+  background: var(--color-accent-light);
+  border-bottom: 1px solid var(--color-accent-border);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.weekdayLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.875rem;
+  padding: 0.4rem 0.25rem;
+  text-align: center;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  border-radius: 6px;
+  border: 1px solid var(--color-accent-border);
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.weekdayLabelWeekend {
+  color: var(--color-accent-secondary);
+  background: var(--color-accent-secondary-light);
+  border-color: color-mix(in srgb, var(--color-accent-secondary) 28%, var(--color-accent-border));
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-accent-secondary) 10%, transparent);
+}
+
+.weeksStack {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 28rem;
+}
+
+.weeksStackSingle {
+  min-height: 0;
+  flex: 1;
+}
+
+.rootWeekMode .weeksStackSingle {
+  min-height: 12rem;
+}
+
+.weekRowExpanded {
+  flex: 1;
+  min-height: 14rem;
+}
+
+.rootWeekMode .dayCell {
+  min-height: 10rem;
+}
+
+.rootWeekMode .weekRowExpanded .dayCell {
+  min-height: 12rem;
+}
+
+.weekRow {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 5.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.weekRow:last-child {
+  border-bottom: none;
+}
+
+.weekRowDays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem 0.25rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.weekRowBars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  column-gap: 0;
+  row-gap: 0.2rem;
+  padding: 0.2rem 0.35rem 0.45rem;
+  flex-shrink: 0;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.dayCell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 5.75rem;
+  padding: 0.45rem 0.5rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  box-shadow:
+    0 1px 2px var(--color-shadow-tint-5),
+    inset 0 0 0 1px var(--color-surface-inset);
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.dayCell:hover {
+  border-color: var(--color-accent-border);
+  background: color-mix(in srgb, var(--color-accent-light) 65%, var(--color-surface));
+  box-shadow:
+    0 2px 6px color-mix(in srgb, var(--color-accent) 10%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.dayCellOutside {
+  border-color: color-mix(in srgb, var(--color-border) 70%, var(--color-bg-secondary));
+  background: color-mix(in srgb, var(--color-bg-secondary) 38%, var(--color-surface));
+}
+
+.dayCellOutside .dayNum {
+  color: var(--color-text-disabled);
+  font-weight: 500;
+}
+
+.dayCellSelected {
+  border-color: var(--color-accent-border);
+  background: var(--color-accent-light);
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--color-accent) 35%, var(--color-accent-border)),
+    0 2px 8px color-mix(in srgb, var(--color-accent) 14%, transparent);
+  z-index: 1;
+}
+
+.dayCellHead {
+  display: flex;
+  align-items: flex-start;
+  flex-shrink: 0;
+  min-height: 1.5rem;
+}
+
+.dayNum {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.625rem;
+  height: 1.625rem;
+  padding: 0 0.2rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.dayNumToday {
+  border-radius: 9999px;
+  color: var(--color-accent);
+  font-weight: 700;
+  background: color-mix(in srgb, var(--color-accent-light) 70%, var(--color-surface));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+}
+
+.dayEvents {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.25rem;
+  margin-top: 0.3rem;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Полоса задачи с периодом «от — до» на всю ширину дней */
+.rangeBar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  min-height: 1.5rem;
+  height: 1.5rem;
+  margin: 0 2px;
+  padding: 0 0.5rem 0 0.45rem;
+  border: 1.5px solid color-mix(in srgb, var(--bar-accent, var(--color-accent)) 42%, var(--color-accent-border));
+  border-left-width: 3.5px;
+  border-left-color: var(--bar-accent, var(--color-accent));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--bar-accent, var(--color-accent)) 18%, transparent),
+    0 1px 0 color-mix(in srgb, var(--bar-accent, var(--color-accent)) 14%, var(--color-border)),
+    0 2px 8px color-mix(in srgb, var(--bar-accent, var(--color-accent)) 16%, transparent);
+  border-radius: 6px;
+  background: color-mix(
+    in srgb,
+    var(--bar-accent, var(--color-accent)) 10%,
+    var(--color-accent-light) 88%,
+    var(--color-surface)
+  );
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    border-color 0.14s,
+    background 0.14s,
+    box-shadow 0.14s;
+}
+
+.rangeBar:hover {
+  border-color: color-mix(in srgb, var(--bar-accent, var(--color-accent)) 65%, var(--color-accent-border));
+  border-left-color: var(--bar-accent, var(--color-accent));
+  background: color-mix(
+    in srgb,
+    var(--bar-accent, var(--color-accent)) 14%,
+    var(--color-accent-light) 92%,
+    var(--color-surface)
+  );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--bar-accent, var(--color-accent)) 22%, transparent),
+    0 1px 0 color-mix(in srgb, var(--bar-accent, var(--color-accent)) 22%, var(--color-border)),
+    0 3px 10px color-mix(in srgb, var(--bar-accent, var(--color-accent)) 22%, transparent);
+}
+
+.rangeBarContinuation {
+  padding: 0;
+  min-height: 1.5rem;
+  height: 1.5rem;
+  border-left-width: 3.5px;
+  border-left-color: color-mix(in srgb, var(--bar-accent, var(--color-accent)) 82%, var(--color-accent-border));
+  background: color-mix(
+    in srgb,
+    var(--bar-accent, var(--color-accent)) 8%,
+    var(--color-accent-light) 82%,
+    var(--color-surface)
+  );
+}
+
+.rangeBarDot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bar-accent, var(--color-accent));
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--bar-accent, var(--color-accent)) 35%, transparent);
+}
+
+.rangeBarTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.rangeBarOverdue {
+  border-color: color-mix(in srgb, var(--color-required) 58%, var(--color-border));
+  border-left-color: var(--color-required);
+  background: color-mix(in srgb, var(--color-required) 12%, var(--color-required-bg) 70%, var(--color-surface));
+  color: var(--color-danger);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-required) 22%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-required) 20%, var(--color-border)),
+    0 2px 8px color-mix(in srgb, var(--color-required) 18%, transparent);
+}
+
+.rangeBarOverdue .rangeBarDot {
+  background: var(--color-required);
+}
+
+.rangeBarCompleted {
+  opacity: 0.78;
+  border: 1.5px solid color-mix(in srgb, var(--color-text-secondary) 35%, var(--color-border));
+  border-left-width: 3.5px;
+  border-left-color: var(--color-text-disabled);
+  background: color-mix(in srgb, var(--color-bg-secondary) 65%, var(--color-surface));
+  color: var(--color-text-secondary);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-text-secondary) 12%, transparent),
+    0 1px 2px var(--color-shadow-tint-6);
+}
+
+.rangeBarCompleted .rangeBarDot {
+  background: var(--color-text-disabled);
+}
+
+/* Плитка задачи — одна дата */
+.eventChip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  min-height: 1.5rem;
+  height: auto;
+  padding: 0.32rem 0.5rem 0.32rem 0.42rem;
+  border: 1.5px solid color-mix(in srgb, var(--chip-accent, var(--color-accent)) 42%, var(--color-accent-border));
+  border-left-width: 3.5px;
+  border-left-color: var(--chip-accent, var(--color-accent));
+  border-radius: 6px;
+  background: color-mix(
+    in srgb,
+    var(--chip-accent, var(--color-accent)) 10%,
+    var(--color-accent-light) 88%,
+    var(--color-surface)
+  );
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--chip-accent, var(--color-accent)) 18%, transparent),
+    0 1px 0 color-mix(in srgb, var(--chip-accent, var(--color-accent)) 14%, var(--color-border)),
+    0 2px 6px color-mix(in srgb, var(--chip-accent, var(--color-accent)) 14%, transparent);
+  transition:
+    border-color 0.14s,
+    background 0.14s,
+    box-shadow 0.14s,
+    transform 0.12s;
+}
+
+.eventChip:hover {
+  border-color: color-mix(in srgb, var(--chip-accent, var(--color-accent)) 65%, var(--color-accent-border));
+  border-left-color: var(--chip-accent, var(--color-accent));
+  background: color-mix(
+    in srgb,
+    var(--chip-accent, var(--color-accent)) 14%,
+    var(--color-accent-light) 92%,
+    var(--color-surface)
+  );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--chip-accent, var(--color-accent)) 22%, transparent),
+    0 1px 0 color-mix(in srgb, var(--chip-accent, var(--color-accent)) 20%, var(--color-border)),
+    0 3px 10px color-mix(in srgb, var(--chip-accent, var(--color-accent)) 20%, transparent);
+}
+
+.eventChip:active {
+  transform: scale(0.99);
+}
+
+.eventChipDot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--chip-accent, var(--color-accent));
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--chip-accent, var(--color-accent)) 35%, transparent);
+}
+
+.eventChipTitle {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.eventChipOverdue {
+  border-color: color-mix(in srgb, var(--color-required) 58%, var(--color-border));
+  border-left-color: var(--color-required);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-required) 22%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-required) 16%, var(--color-border)),
+    0 2px 6px color-mix(in srgb, var(--color-required) 14%, transparent);
+  background: color-mix(in srgb, var(--color-required) 12%, var(--color-required-bg) 70%, var(--color-surface));
+  color: var(--color-danger);
+}
+
+.eventChipOverdue .eventChipDot {
+  background: var(--color-required);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-required) 35%, transparent);
+}
+
+.eventChipOverdue:hover {
+  border-color: color-mix(in srgb, var(--color-required) 72%, var(--color-required));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-required) 28%, transparent),
+    0 1px 0 color-mix(in srgb, var(--color-required) 20%, var(--color-border)),
+    0 3px 10px color-mix(in srgb, var(--color-required) 20%, transparent);
+}
+
+.eventChipCompleted {
+  opacity: 0.78;
+  border: 1.5px solid color-mix(in srgb, var(--color-text-secondary) 35%, var(--color-border));
+  border-left-width: 3.5px;
+  border-left-color: var(--color-text-disabled);
+  background: color-mix(in srgb, var(--color-bg-secondary) 65%, var(--color-surface));
+  color: var(--color-text-secondary);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--color-text-secondary) 12%, transparent),
+    0 1px 2px var(--color-shadow-tint-6);
+}
+
+.eventChipCompleted .eventChipDot {
+  background: var(--color-text-disabled);
+  box-shadow: none;
+}
+
+.dayMoreBtn {
+  align-self: flex-start;
+  padding: 0.15rem 0.35rem;
+  margin-top: 0.05rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.12s, background 0.12s;
+}
+
+.dayMoreBtn:hover {
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+
+.dayPanel {
+  flex-shrink: 0;
+  width: min(20rem, 38vw);
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dayPanelHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0.5rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+
+.dayPanelTitle {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.dayPanelClose {
+  border: none;
+  background: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.25rem;
+  transition: color 0.12s, background 0.12s;
+}
+
+.dayPanelClose:hover {
+  color: var(--color-text);
+  background: var(--color-bg-secondary);
+}
+
+.dayPanelAdd {
+  margin: 0.75rem 1rem 0.5rem;
+  align-self: flex-start;
+}
+
+.dayPanelList {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem 0.65rem 1rem;
+  overflow: auto;
+  flex: 1;
+}
+
+.dayPanelEmpty {
+  padding: 0.75rem 0.5rem;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+}
+
+.dayPanelItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.6rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
+  border-radius: 8px;
+  background: var(--color-bg);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.14s,
+    background 0.14s,
+    box-shadow 0.14s;
+}
+
+.dayPanelList > li + li {
+  margin-top: 0.35rem;
+}
+
+.dayPanelItem:hover {
+  border-color: var(--color-accent-border);
+  background: var(--color-surface);
+  box-shadow: 0 2px 8px var(--color-shadow-tint-5);
+}
+
+.dayPanelItemName {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.dayPanelItemMeta {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+}
+
+@keyframes calBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes calSheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+    padding: 0.5rem 0.65rem 0.55rem;
+    padding-left: max(0.65rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.65rem, env(safe-area-inset-right, 0px));
+  }
+
+  .toolbarNav {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    gap: 0.3rem;
+    justify-content: stretch;
+  }
+
+  .toolbarPeriod {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .toolbarTitleBtn {
+    width: 100%;
+    max-width: none;
+    font-size: 0.9375rem;
+    padding: 0.4rem 0.35rem;
+  }
+
+  .toolbarTitleText {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .toolbarWeekMode .toolbarTitleBtn {
+    font-size: 0.8125rem;
+    padding: 0.38rem 0.3rem;
+  }
+
+  .toolbarWeekMode .toolbarTitleText {
+    white-space: normal;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .navBtn {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+  }
+
+  .toolbarActions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.4rem;
+    width: 100%;
+  }
+
+  .modeDropdown {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .todayBtn {
+    min-height: 2.5rem;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+
+  .rootWeekMode .weeksStackSingle {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .rootWeekMode .weekRowExpanded {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .rootWeekMode .weekRowDays {
+    flex: 0 1 auto;
+    min-height: 0;
+    grid-auto-rows: auto;
+    align-items: start;
+    gap: 0.28rem;
+    padding: 0.35rem 0.4rem 0.3rem;
+  }
+
+  .rootWeekMode .dayCell {
+    min-height: 5.5rem;
+    height: auto;
+    align-self: stretch;
+    justify-content: flex-start;
+    padding: 0.35rem 0.2rem 0.3rem;
+  }
+
+  .rootWeekMode .dayNum {
+    font-size: 0.75rem;
+    min-width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .rootWeekMode .dayEvents {
+    flex: 0 1 auto;
+    gap: 0.2rem;
+    margin-top: 0.25rem;
+  }
+
+  .rootWeekMode .eventChip {
+    flex: 0 0 auto;
+    min-height: 1.25rem;
+    height: auto;
+    padding: 0.28rem 0.3rem 0.28rem 0.26rem;
+    border: 1.5px solid color-mix(in srgb, var(--chip-accent, var(--color-accent)) 42%, var(--color-accent-border));
+    border-left-width: 3px;
+    border-radius: 5px;
+    background: color-mix(
+      in srgb,
+      var(--chip-accent, var(--color-accent)) 10%,
+      var(--color-accent-light) 88%,
+      var(--color-surface)
+    );
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--chip-accent, var(--color-accent)) 12%, transparent),
+      0 1px 2px color-mix(in srgb, var(--chip-accent, var(--color-accent)) 10%, transparent);
+  }
+
+  .rootWeekMode .eventChipDot {
+    display: block;
+    width: 5px;
+    height: 5px;
+  }
+
+  .rootWeekMode .eventChipTitle {
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 1.15;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .rootWeekMode .rangeBar {
+    min-height: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .rootWeekMode .rangeBarTitle {
+    display: block;
+    font-size: 0.5625rem;
+    padding: 0 0.25rem;
+  }
+
+  .rootWeekMode .rangeBarDot {
+    display: block;
+    width: 5px;
+    height: 5px;
+  }
+
+  .rootWeekMode .dayMoreBtn {
+    flex: 0 0 auto;
+    font-size: 0.5625rem;
+    min-height: 1.25rem;
+    height: auto;
+  }
+
+  .rootWeekMode .weekdayLabel {
+    font-size: 0.5rem;
+    letter-spacing: 0.04em;
+    padding: 0.26rem 0.05rem;
+  }
+
+  .body {
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gridWrap {
+    flex: 1;
+    min-height: 0;
+    justify-content: flex-start;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .weekHeader {
+    top: 0;
+    padding: 0.38rem 0.35rem 0.42rem;
+    gap: 0.2rem;
+    backdrop-filter: blur(10px) saturate(1.15);
+    -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  }
+
+  .weekdayLabel {
+    min-height: 1.5rem;
+    padding: 0.28rem 0.1rem;
+    font-size: 0.5625rem;
+    letter-spacing: 0.06em;
+    border-radius: 5px;
+  }
+
+  .weeksStack {
+    min-height: 0;
+    flex: 0 0 auto;
+  }
+
+  .weeksStack:not(.weeksStackSingle) .weekRow {
+    min-height: 0;
+    flex: 0 0 auto;
+  }
+
+  .weekRow {
+    min-height: 4.25rem;
+    flex: 0 0 auto;
+  }
+
+  .weekRowDays {
+    flex: 0 0 auto;
+    align-items: start;
+    gap: 0.2rem;
+    padding: 0.28rem 0.35rem 0.2rem;
+  }
+
+  .weekRowBars {
+    padding: 0.15rem 0.35rem 0.35rem;
+    row-gap: 0.15rem;
+  }
+
+  .dayCell {
+    min-height: 3.35rem;
+    height: auto;
+    align-self: stretch;
+    justify-content: flex-start;
+    padding: 0.32rem 0.22rem 0.28rem;
+    border-radius: 5px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dayCell:active {
+    background: color-mix(in srgb, var(--color-accent-light) 75%, var(--color-surface));
+  }
+
+  .dayNum {
+    min-width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .dayEvents {
+    flex: 0 0 auto;
+    gap: 0.15rem;
+    margin-top: 0.2rem;
+  }
+
+  .eventChip {
+    flex: 0 0 auto;
+    min-height: 0.375rem;
+    height: 0.375rem;
+    padding: 0;
+    border: none;
+    border-radius: 9999px;
+    background: var(--chip-accent, var(--color-accent));
+    box-shadow: none;
+  }
+
+  .eventChipDot,
+  .eventChipTitle {
+    display: none;
+  }
+
+  .eventChipOverdue {
+    background: var(--color-required);
+  }
+
+  .eventChipCompleted {
+    background: var(--color-text-disabled);
+    opacity: 0.85;
+  }
+
+  .rangeBar {
+    min-height: 1.125rem;
+    height: 1.125rem;
+    margin: 0 1px;
+    padding: 0;
+    border-width: 1.5px;
+    border-left-width: 3.5px;
+    border-radius: 4px;
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--bar-accent, var(--color-accent)) 16%, transparent),
+      0 1px 0 color-mix(in srgb, var(--bar-accent, var(--color-accent)) 12%, var(--color-border));
+  }
+
+  .rangeBarDot,
+  .rangeBarTitle {
+    display: none;
+  }
+
+  .rangeBarContinuation {
+    min-height: 1.125rem;
+    height: 1.125rem;
+  }
+
+  .dayMoreBtn {
+    min-height: 1.375rem;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.5625rem;
+  }
+
+  .dayPanelBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 44;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: var(--color-overlay);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    cursor: pointer;
+    animation: calBackdropIn 0.22s ease-out both;
+  }
+
+  .dayPanelSheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 46;
+    width: 100%;
+    max-height: min(
+      58dvh,
+      calc(100dvh - var(--app-mobile-header-height, 52px) - 4.5rem)
+    );
+    border-left: none;
+    border-top: none;
+    border-radius: 20px 20px 0 0;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--color-border) 55%, transparent),
+      0 -16px 48px var(--color-shadow-tint-12),
+      0 -6px 20px var(--color-shadow-tint-12);
+    animation: calSheetIn 0.38s cubic-bezier(0.32, 0.72, 0, 1) both;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .dayPanelHandle {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem 0.15rem;
+  }
+
+  .dayPanelHandleBar {
+    display: block;
+    width: 2.25rem;
+    height: 0.25rem;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-text-secondary) 35%, var(--color-border));
+  }
+
+  .dayPanelHead {
+    padding: 0.35rem 1rem 0.55rem;
+  }
+
+  .dayPanelTitle {
+    font-size: 1rem;
+    padding-right: 0.25rem;
+  }
+
+  .dayPanelClose {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: -0.35rem -0.25rem -0.35rem 0;
+  }
+
+  .dayPanelAdd {
+    margin: 0.5rem 1rem 0.45rem;
+    width: calc(100% - 2rem);
+    align-self: stretch;
+    justify-content: center;
+    min-height: 2.75rem;
+  }
+
+  .dayPanelList {
+    padding: 0.25rem 0.85rem 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .dayPanelItem {
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 2.75rem;
+    padding: 0.7rem 0.65rem;
+  }
+
+  .dayPanelItemName {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .dayPanelBackdrop,
+  .dayPanelSheet {
+    animation: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .weekdayLabel {
+    font-size: 0.5rem;
+    letter-spacing: 0.04em;
+  }
+
+  .dayCell {
+    min-height: 3rem;
+  }
+}

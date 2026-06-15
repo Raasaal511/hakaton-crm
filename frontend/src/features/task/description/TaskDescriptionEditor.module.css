@@ -1,0 +1,359 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
+  background:
+    radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--color-accent) 12%, transparent) 1px,
+      transparent 0
+    ),
+    var(--color-surface);
+  background-size: 20px 20px, auto;
+  box-shadow:
+    inset 0 1px 0 var(--color-inset-top),
+    0 16px 48px -28px var(--color-shadow-tint-12);
+  overflow: visible;
+}
+
+.editorShell {
+  position: relative;
+  min-height: 260px;
+  max-height: min(62vh, 560px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-border) 88%, transparent) transparent;
+  border-radius: 15px;
+  background: var(--color-bg);
+}
+
+.proseMirror {
+  min-height: 228px;
+  padding: 1.35rem 1.35rem 1.15rem 2.65rem;
+  font-size: 1rem;
+  line-height: 1.72;
+  letter-spacing: -0.011em;
+  color: var(--color-text);
+  outline: none;
+}
+
+/* Ручка перетаскивания блока (TipTap DragHandle) */
+.dragHandleRoot {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.dragHandleInner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  opacity: 0.38;
+  cursor: grab;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.dragHandleRoot:hover .dragHandleInner {
+  opacity: 1;
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+
+.dragHandleRoot:active .dragHandleInner {
+  cursor: grabbing;
+}
+
+/* Всплывающая панель форматирования (выделение текста) */
+.bubbleToolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--color-bg);
+  border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
+  box-shadow:
+    0 4px 12px var(--color-popover-shadow),
+    0 2px 4px var(--color-shadow-tint-12);
+}
+
+.bubbleBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.bubbleBtn:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+
+.bubbleBtn[data-active='true'] {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.bubbleBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+.bubbleSep {
+  width: 1px;
+  height: 1.25rem;
+  margin: 0 2px;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+.bubbleLinkWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+}
+
+.proseMirror:focus-visible {
+  outline: none;
+}
+
+/* TipTap / ProseMirror placeholder — любой пустой абзац (не только первый в документе) */
+.proseMirror :global(p.is-empty) {
+  /* Пустой <p></p> может схлопнуться по высоте — тогда даже работающий ::before почти не виден */
+  min-height: calc(1.72em + 2px);
+}
+
+.proseMirror :global(p.is-empty)::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  font-style: italic;
+}
+
+/* Типографика документа */
+.proseMirror :global(h1) {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.proseMirror :global(h2) {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.proseMirror :global(h3) {
+  margin: 1rem 0 0.375rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.proseMirror :global(p) {
+  margin: 0 0 0.75rem;
+}
+
+.proseMirror :global(ul),
+.proseMirror :global(ol) {
+  margin: 0 0 0.75rem;
+  padding-left: 1.35rem;
+}
+
+.proseMirror :global(li) {
+  margin: 0.25rem 0;
+}
+
+.proseMirror :global(blockquote) {
+  margin: 0.35rem 0 1rem;
+  padding: 0.65rem 0.85rem 0.65rem 1rem;
+  border-radius: 0 10px 10px 0;
+  border-left: 3px solid color-mix(in srgb, var(--color-accent) 75%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-bg-secondary));
+  color: var(--color-text-secondary);
+}
+
+.proseMirror :global(hr) {
+  margin: 1.25rem 0;
+  border: none;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
+}
+
+.proseMirror :global(a.link),
+.proseMirror :global(a) {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.proseMirror :global(code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.proseMirror :global(pre) {
+  margin: 0 0 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  overflow-x: auto;
+}
+
+.proseMirror :global(pre code) {
+  padding: 0;
+  background: none;
+}
+
+.link {
+  color: var(--color-accent);
+}
+
+/* Панель ссылки во всплывающей панели */
+.linkPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  min-width: min(320px, calc(100vw - 2rem));
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+}
+
+.linkLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.linkInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.8125rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--color-text);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.linkInput:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+.linkActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.linkBtnPrimary {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+
+.linkBtnPrimary:hover {
+  opacity: 0.92;
+}
+
+.linkBtnGhost {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.linkBtnGhost:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-secondary);
+}
+
+.linkBtnDanger {
+  margin-left: auto;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-required);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.linkBtnDanger:hover {
+  opacity: 0.85;
+}
+
+/* Линия вставки между блоками при drag-and-drop (prosemirror-dropcursor).
+   Цвет задаём здесь: color:false в Dropcursor extension. */
+.taskDescriptionDropTargets :global(div.task-description-drop-line.prosemirror-dropcursor-block) {
+  margin: 0;
+  opacity: 1 !important;
+  background-color: color-mix(in srgb, var(--color-accent) 88%, transparent) !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 35%, transparent),
+    0 1px 4px var(--color-shadow-tint-12);
+  border-radius: 2px;
+}
+
+.taskDescriptionDropTargets :global(div.task-description-drop-line.prosemirror-dropcursor-inline) {
+  margin: 0;
+  opacity: 1 !important;
+  background-color: color-mix(in srgb, var(--color-accent) 92%, transparent) !important;
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 42%, transparent),
+    0 0 12px color-mix(in srgb, var(--color-accent) 25%, transparent);
+}

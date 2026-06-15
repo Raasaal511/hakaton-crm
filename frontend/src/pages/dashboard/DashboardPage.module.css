@@ -1,0 +1,489 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 0;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 2rem 0;
+  flex-shrink: 0;
+}
+
+.topBarLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.pageTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.pageSubtitle {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.quickActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quickBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quickBtn:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-hover);
+  color: var(--color-text);
+}
+
+.quickBtnPrimary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.quickBtnPrimary:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  color: #fff;
+}
+
+.body {
+  flex: 1;
+  padding: 1.5rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+/* KPI Cards */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.kpiCard {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: box-shadow 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpiCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--kpi-color, var(--color-accent));
+  border-radius: 12px 12px 0 0;
+}
+
+.kpiCard:hover {
+  box-shadow: var(--shadow-elevated);
+}
+
+.kpiHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.kpiIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--kpi-bg, var(--color-accent-light));
+  color: var(--kpi-color, var(--color-accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpiLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kpiValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.kpiFooter {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.kpiChange {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-weight: 600;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.kpiChangeUp {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.kpiChangeDown {
+  color: var(--color-required);
+  background: var(--color-required-bg);
+}
+
+.kpiChangePeriod {
+  color: var(--color-text-secondary);
+}
+
+/* Charts Row */
+.chartsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.125rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cardTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cardTitleIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cardTitle {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.cardSubtitle {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.cardBody {
+  padding: 1.25rem;
+}
+
+/* Funnel */
+.funnelList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.funnelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.funnelLabel {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  width: 130px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.funnelBarTrack {
+  flex: 1;
+  height: 8px;
+  background: var(--color-bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.funnelBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.funnelCount {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Recent deals table */
+.dealsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dealsTable th {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 0.75rem 0.5rem 0;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dealsTable td {
+  padding: 0.75rem 0.75rem 0.75rem 0;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.dealsTable tr:last-child td {
+  border-bottom: none;
+}
+
+.dealTitle {
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  display: block;
+}
+
+.dealCompany {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.dealAmount {
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.stageBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.probBar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.probTrack {
+  width: 48px;
+  height: 4px;
+  background: var(--color-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.probFill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-accent);
+}
+
+.probText {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+  width: 28px;
+}
+
+/* Bottom row */
+.bottomRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Activities */
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.activityItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
+}
+
+.activityItem:last-child {
+  border-bottom: none;
+}
+
+.activityDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.activityContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.activityText {
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  line-height: 1.4;
+  margin: 0 0 0.2rem;
+}
+
+.activityMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+}
+
+.activityUser {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.activityAvatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Revenue chart */
+.revenueChart {
+  height: 160px;
+  padding-top: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 1280px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .chartsRow {
+    grid-template-columns: 1fr;
+  }
+
+  .bottomRow {
+    grid-template-columns: 1fr;
+  }
+
+  .body {
+    padding: 1rem 1.25rem 1.5rem;
+  }
+
+  .topBar {
+    padding: 1rem 1.25rem 0;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .kpiGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .quickActions {
+    display: none;
+  }
+}

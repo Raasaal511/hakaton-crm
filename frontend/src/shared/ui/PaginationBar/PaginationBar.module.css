@@ -1,0 +1,68 @@
+.bar {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.info {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.navBtn,
+.pageBtn {
+  min-width: 2.25rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.navBtn:hover:not(:disabled),
+.pageBtn:hover:not(:disabled):not(.pageBtnActive) {
+  border-color: var(--color-accent-border);
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+
+.pageBtnActive {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  cursor: default;
+}
+
+.navBtn:disabled,
+.pageBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ellipsis {
+  min-width: 1.5rem;
+  padding: 0 0.15rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  user-select: none;
+}

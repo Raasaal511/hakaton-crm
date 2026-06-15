@@ -1,0 +1,583 @@
+.card {
+  background: var(--color-bg);
+  border: 1.5px solid color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
+  border-radius: var(--radius);
+  padding: 0.75rem 0.85rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-shadow:
+    var(--shadow-sm),
+    0 0 0 0 color-mix(in srgb, var(--color-accent) 0%, transparent);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+  position: relative;
+}
+
+.card:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+  box-shadow:
+    var(--shadow-sm),
+    0 0 0 3px color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.cardDraggable {
+  cursor: grab;
+}
+
+.cardDraggable:active {
+  cursor: grabbing;
+}
+
+/* ── Header ─────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-bg-secondary));
+  color: var(--color-accent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
+  user-select: none;
+}
+
+/* ── Menu ───────────────────────────────────── */
+
+.menuWrap {
+  position: relative;
+}
+
+.menuBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: background 0.12s, color 0.12s;
+}
+
+.menuBtn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+}
+
+.menuDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.25rem);
+  z-index: 50;
+  min-width: 9rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.menuItem {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.875rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.menuItem:hover {
+  background: var(--color-bg-secondary);
+}
+
+.menuItemDanger {
+  color: var(--color-required);
+}
+
+.menuItemDanger:hover {
+  background: color-mix(in srgb, var(--color-required) 8%, transparent);
+}
+
+/* ── Content ────────────────────────────────── */
+
+.title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.dateRange {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+/* ── Progress ───────────────────────────────── */
+
+.progressSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.progressHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.progressLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.progressSep {
+  opacity: 0.45;
+  font-weight: 400;
+  margin: 0 0.15rem;
+}
+
+.progressPct {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.progressBar {
+  height: 5px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-accent) 15%, var(--color-border));
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    var(--color-accent),
+    color-mix(in srgb, var(--color-accent) 75%, var(--color-accent-secondary))
+  );
+  transition: width 0.4s ease;
+  min-width: 0%;
+}
+
+/* ── Avatar row ─────────────────────────────── */
+
+.avatarRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.avatar {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: white;
+  background: color-mix(in srgb, var(--color-accent-secondary) 80%, var(--color-accent));
+  border: 2px solid var(--color-bg);
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.avatarStatus_completed {
+  background: color-mix(in srgb, #22c55e 80%, #16a34a);
+  border-color: color-mix(in srgb, #22c55e 20%, var(--color-bg));
+}
+
+.avatarStatus_inprogress {
+  background: color-mix(in srgb, var(--color-accent) 85%, var(--color-accent-secondary));
+}
+
+.avatarStatus_pending {
+  background: color-mix(in srgb, var(--color-text-secondary) 45%, var(--color-bg-secondary));
+}
+
+.avatarCheck {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 11px;
+  height: 11px;
+  background: #22c55e;
+  border: 1.5px solid var(--color-bg);
+  border-radius: 50%;
+  font-size: 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  line-height: 1;
+}
+
+.avatarExtra {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  padding: 0 0.2rem;
+}
+
+.expandBtn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s, color 0.12s;
+}
+
+.expandBtn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+}
+
+.expandBtn svg {
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ── Children list ──────────────────────────── */
+
+.childList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.childRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.childRow:hover {
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-bg-secondary));
+}
+
+.childDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dotStatus_completed {
+  background: #22c55e;
+}
+
+.dotStatus_inprogress {
+  background: var(--color-accent);
+}
+
+.dotStatus_pending {
+  background: color-mix(in srgb, var(--color-text-secondary) 50%, transparent);
+}
+
+.childName {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.childColumn {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Open hint ──────────────────────────────── */
+
+.openHint {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  opacity: 0;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.card:hover .openHint {
+  opacity: 0.7;
+}
+
+/* ── Drawer content ─────────────────────────── */
+
+.drawerHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  margin: -0.35rem -0.5rem 0 0;
+}
+
+.drawerEditBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.drawerEditBtn:hover {
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-bg-secondary));
+  border-color: color-mix(in srgb, var(--color-accent) 35%, var(--color-border));
+  color: var(--color-accent);
+}
+
+.drawerBadgeRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.drawerTotalBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  padding: 0.15rem 0.55rem;
+}
+
+.drawerBody {
+  gap: 1.25rem;
+}
+
+.drawerProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.85rem 1rem;
+  background: color-mix(in srgb, var(--color-accent) 5%, var(--color-bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 18%, var(--color-border));
+  border-radius: var(--radius);
+}
+
+.drawerGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.drawerGroupLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.25rem;
+}
+
+.groupDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot_completed { background: #22c55e; }
+.dot_inprogress { background: var(--color-accent); }
+.dot_pending { background: color-mix(in srgb, var(--color-text-secondary) 40%, transparent); }
+
+.groupCount {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.drawerMemberList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.drawerMemberRow {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+  transition: background 0.1s;
+}
+
+.drawerMemberList li:last-child .drawerMemberRow {
+  border-bottom: none;
+}
+
+.drawerMemberRow:hover {
+  background: color-mix(in srgb, var(--color-accent) 5%, var(--color-bg-secondary));
+}
+
+.drawerMemberRowInner {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0 0.6rem 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.drawerAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: white;
+  background: color-mix(in srgb, var(--color-accent-secondary) 80%, var(--color-accent));
+}
+
+.drawerMemberName {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawerMemberColumn {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.drawerArrow {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.drawerMemberRowInner:hover .drawerArrow {
+  opacity: 1;
+}
+
+.drawerApproveBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.35rem 0.6rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #22c55e;
+  background: color-mix(in srgb, #22c55e 10%, transparent);
+  color: #16a34a;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, transform 0.1s;
+}
+
+.drawerApproveBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, #22c55e 18%, transparent);
+}
+
+.drawerApproveBtn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.drawerApproveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.approveSpinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid color-mix(in srgb, #22c55e 30%, transparent);
+  border-top-color: #22c55e;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}

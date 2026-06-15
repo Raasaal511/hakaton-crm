@@ -1,0 +1,1 @@
+export { RemoveDepartmentMemberButton } from './ui'
