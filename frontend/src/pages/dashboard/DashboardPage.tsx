@@ -173,7 +173,10 @@ function ActivityDot({ type, color }: { type: string; color: string }) {
 }
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return ''
+  const diff = Date.now() - date.getTime()
   const mins = Math.floor(diff / 60_000)
   if (mins < 1) return 'только что'
   if (mins < 60) return `${mins} мин назад`
