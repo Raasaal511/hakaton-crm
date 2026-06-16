@@ -46,6 +46,19 @@
   color: var(--color-text-secondary);
 }
 
+.breadcrumbLink {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.breadcrumbLink:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
 .breadcrumbSep {
   color: var(--color-text-disabled);
 }

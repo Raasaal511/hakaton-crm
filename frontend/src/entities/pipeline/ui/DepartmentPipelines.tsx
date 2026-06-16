@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Star } from 'lucide-react'
+import { Star, LayoutDashboard, Plus } from 'lucide-react'
 import { pipelinesAPI } from 'shared/api/requests/pipelines'
 import { pipelineModel } from 'entities/pipeline'
+import { Button } from 'shared/ui'
 import {
   addFavoritePipelineToStore,
   removeFavoritePipelineFromStore,
@@ -11,6 +12,10 @@ import {
 import type { Pipeline } from 'shared/types/pipelines'
 import styles from './DepartmentPipelines.module.css'
 import { CreatePipelineModal } from './CreatePipelineModal'
+
+const CARD_ACCENTS = [
+  '#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6', '#ef4444', '#ec4899',
+]
 
 type Props = {
   departmentId: number
@@ -67,83 +72,135 @@ export function DepartmentPipelines({ departmentId, organizationId, canManage }:
         addFavoritePipelineToStore({ organizationId, item })
       }
     } catch {
-      /* оставить без toast — ошибка уже в axios message при необходимости */
+      /* ignore */
     } finally {
       setBusyPipelineId(null)
     }
   }
 
   if (loading && pipelines.length === 0) {
-    return <div className={styles.loading}>Загрузка воронок…</div>
+    return (
+      <div className={styles.wrapper}>
+        <div className={styles.skeletonGrid}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className={styles.skeletonCard} />
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.headerRow}>
-        <div className={styles.titleBlock}>
+      <div className={styles.sectionHeader}>
+        <div className={styles.sectionMeta}>
+          <span className={styles.sectionTitle}>Воронки</span>
+          {pipelines.length > 0 && (
+            <span className={styles.sectionCount}>{pipelines.length}</span>
+          )}
         </div>
-        {loadError && <p className={styles.error}>{loadError}</p>}
-      </div>
-
-      <div className={styles.grid}>
-        {pipelines.map((p) => {
-          const isFav = favoriteIds.has(p.id)
-          const starDisabled = busyPipelineId === p.id
-          return (
-            <div
-              key={p.id}
-              role="button"
-              tabIndex={0}
-              className={styles.card}
-              onClick={() => navigate(`/departments/${departmentId}/pipelines/${p.id}`)}
-              onKeyDown={(evt) => {
-                if (evt.key === 'Enter' || evt.key === ' ') {
-                  evt.preventDefault()
-                  navigate(`/departments/${departmentId}/pipelines/${p.id}`)
-                }
-              }}
-              aria-label={`Открыть воронку ${p.name}`}
-            >
-              <button
-                type="button"
-                className={`${styles.cardStarBtn} ${isFav ? styles.cardStarBtnActive : ''}`}
-                title={isFav ? 'Убрать из избранного' : 'Добавить в избранные доски'}
-                aria-label={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
-                aria-pressed={isFav}
-                disabled={starDisabled}
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                }}
-                onClick={(e) => void toggleFavorite(e, p)}
-              >
-                <Star
-                  size={17}
-                  strokeWidth={isFav ? 0 : 1.75}
-                  className={`${styles.cardStarIcon} ${isFav ? styles.cardStarIconFilled : ''}`}
-                  aria-hidden
-                  fill={isFav ? 'currentColor' : 'none'}
-                />
-              </button>
-              <div className={styles.cardBody}>
-                <div className={styles.cardBadge}>Канбан‑воронка</div>
-                <div className={styles.cardName}>{p.name}</div>
-              </div>
-            </div>
-          )
-        })}
-
         {canManage && (
-          <button
-            type="button"
-            className={styles.cardCreate}
+          <Button
+            variant="primary"
+            size="sm"
+            iconLeft={<Plus size={13} />}
             onClick={() => setShowCreateModal(true)}
           >
-            <span className={styles.cardCreatePlus}>+</span>
-            <span className={styles.cardCreateText}>Новая воронка</span>
-          </button>
+            Новая воронка
+          </Button>
         )}
       </div>
+
+      {loadError && <p className={styles.error}>{loadError}</p>}
+
+      {pipelines.length === 0 && !loading ? (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyIcon}>
+            <LayoutDashboard size={32} strokeWidth={1.25} />
+          </div>
+          <p className={styles.emptyTitle}>Воронок пока нет</p>
+          <p className={styles.emptyText}>Создайте первую воронку для управления задачами в этом разделе</p>
+          {canManage && (
+            <Button
+              variant="primary"
+              size="sm"
+              iconLeft={<Plus size={13} />}
+              onClick={() => setShowCreateModal(true)}
+            >
+              Создать воронку
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {pipelines.map((p, idx) => {
+            const isFav = favoriteIds.has(p.id)
+            const starDisabled = busyPipelineId === p.id
+            const accent = CARD_ACCENTS[p.id % CARD_ACCENTS.length] ?? CARD_ACCENTS[idx % CARD_ACCENTS.length]
+            return (
+              <div
+                key={p.id}
+                role="button"
+                tabIndex={0}
+                className={styles.card}
+                style={{ '--card-accent': accent } as React.CSSProperties}
+                onClick={() => navigate(`/departments/${departmentId}/pipelines/${p.id}`)}
+                onKeyDown={(evt) => {
+                  if (evt.key === 'Enter' || evt.key === ' ') {
+                    evt.preventDefault()
+                    navigate(`/departments/${departmentId}/pipelines/${p.id}`)
+                  }
+                }}
+                aria-label={`Открыть воронку ${p.name}`}
+              >
+                <div className={styles.cardAccentBar} />
+
+                <div className={styles.cardIcon}>
+                  <LayoutDashboard size={18} strokeWidth={1.5} />
+                </div>
+
+                <div className={styles.cardBody}>
+                  <div className={styles.cardBadge}>Канбан‑воронка</div>
+                  <div className={styles.cardName}>{p.name}</div>
+                </div>
+
+                <button
+                  type="button"
+                  className={`${styles.cardStarBtn} ${isFav ? styles.cardStarBtnActive : ''}`}
+                  title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
+                  aria-label={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
+                  aria-pressed={isFav}
+                  disabled={starDisabled}
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                  }}
+                  onClick={(e) => void toggleFavorite(e, p)}
+                >
+                  <Star
+                    size={15}
+                    strokeWidth={isFav ? 0 : 1.75}
+                    className={`${styles.cardStarIcon} ${isFav ? styles.cardStarIconFilled : ''}`}
+                    aria-hidden
+                    fill={isFav ? 'currentColor' : 'none'}
+                  />
+                </button>
+              </div>
+            )
+          })}
+
+          {canManage && (
+            <button
+              type="button"
+              className={styles.cardCreate}
+              onClick={() => setShowCreateModal(true)}
+            >
+              <Plus size={20} strokeWidth={1.75} className={styles.cardCreatePlus} />
+              <span className={styles.cardCreateText}>Новая воронка</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {showCreateModal && canManage && (
         <CreatePipelineModal

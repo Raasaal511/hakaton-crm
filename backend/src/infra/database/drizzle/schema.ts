@@ -833,3 +833,45 @@ export const realtimeBoardJournalSchema = pgTable('realtime_board_journal', {
 }))
 
 export type RealtimeBoardJournal = typeof realtimeBoardJournalSchema.$inferSelect
+
+// ---------------------------------------------------------------------------
+// Projects
+// ---------------------------------------------------------------------------
+
+export const projectsSchema = pgTable('projects', {
+    id: serial('id').primaryKey(),
+    organizationId: integer('organization_id').references(() => organizationsSchema.id, { onDelete: 'cascade' }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description'),
+    status: varchar('status', { length: 50 }).default('planning').notNull(),
+    priority: varchar('priority', { length: 20 }).default('medium').notNull(),
+    ownerUserId: integer('owner_user_id').references(() => usersSchema.id, { onDelete: 'set null' }),
+    startDate: appTimestamp('start_date'),
+    endDate: appTimestamp('end_date'),
+    budget: integer('budget').default(0).notNull(),
+    currency: varchar('currency', { length: 3 }).default('RUB').notNull(),
+    progress: integer('progress').default(0).notNull(),
+    color: varchar('color', { length: 7 }).default('#6366f1'),
+    createdAt: appTimestamp('created_at').default(sql`now()`),
+    updatedAt: appTimestamp('updated_at').default(sql`now()`).$onUpdate(() => new Date()),
+    deletedAt: appTimestamp('deleted_at'),
+}, (table) => ({
+    orgIdx: index('projects_org_idx').on(table.organizationId),
+    statusIdx: index('projects_status_idx').on(table.status),
+    ownerIdx: index('projects_owner_idx').on(table.ownerUserId),
+}))
+
+export type Project = typeof projectsSchema.$inferSelect
+
+export const projectMembersSchema = pgTable('project_members', {
+    projectId: integer('project_id').references(() => projectsSchema.id, { onDelete: 'cascade' }).notNull(),
+    userId: integer('user_id').references(() => usersSchema.id, { onDelete: 'cascade' }).notNull(),
+    role: varchar('role', { length: 30 }).default('member').notNull(),
+    joinedAt: appTimestamp('joined_at').default(sql`now()`),
+}, (table) => ({
+    pk: primaryKey({ columns: [table.projectId, table.userId] }),
+    projectIdx: index('project_members_project_idx').on(table.projectId),
+    userIdx: index('project_members_user_idx').on(table.userId),
+}))
+
+export type ProjectMember = typeof projectMembersSchema.$inferSelect

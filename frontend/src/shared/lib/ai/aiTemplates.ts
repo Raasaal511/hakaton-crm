@@ -4,6 +4,14 @@
  * All responses are crafted to sound intelligent and CRM-specific.
  */
 
+export type AiLeadSummary = {
+  title: string
+  stage: string
+  amount: number
+  priority: string
+  probability: number
+}
+
 export type AiContext = {
   leadCount: number
   dealCount: number
@@ -15,6 +23,8 @@ export type AiContext = {
   conversionRate: string
   orgName: string
   managerName: string
+  /** Актуальный список лидов для ответов AI */
+  leads: AiLeadSummary[]
 }
 
 export type TemplateKey =

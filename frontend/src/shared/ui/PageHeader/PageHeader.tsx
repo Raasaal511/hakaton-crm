@@ -15,6 +15,7 @@ export type PageTab = {
 
 export type PageHeaderProps = {
   title: string
+  titleNode?: ReactNode
   breadcrumb?: BreadcrumbItem[]
   description?: string
   actions?: ReactNode
@@ -26,6 +27,7 @@ export type PageHeaderProps = {
 
 export function PageHeader({
   title,
+  titleNode,
   breadcrumb,
   description,
   actions,
@@ -42,7 +44,11 @@ export function PageHeader({
             <nav className={styles.breadcrumb} aria-label="Навигация">
               {breadcrumb.map((item, i) => (
                 <span key={i} className={styles.breadcrumbItem}>
-                  <span className={styles.breadcrumbLabel}>{item.label}</span>
+                  {item.href ? (
+                    <a href={item.href} className={styles.breadcrumbLink}>{item.label}</a>
+                  ) : (
+                    <span className={styles.breadcrumbLabel}>{item.label}</span>
+                  )}
                   {i < breadcrumb.length - 1 && (
                     <ChevronRight size={12} strokeWidth={2} className={styles.breadcrumbSep} aria-hidden />
                   )}
@@ -50,7 +56,7 @@ export function PageHeader({
               ))}
             </nav>
           )}
-          <h1 className={styles.title}>{title}</h1>
+          {titleNode ?? <h1 className={styles.title}>{title}</h1>}
           {description && (
             <p className={styles.description}>{description}</p>
           )}

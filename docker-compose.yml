@@ -1,7 +1,24 @@
 version: '3.9'
 
+# ── Одна команда для запуска с нуля: ──────────────────────────────────────────
+#   docker compose up --build
+#
+# Что происходит автоматически:
+#   1. Поднимается PostgreSQL
+#   2. Бекенд ждёт готовности БД
+#   3. Drizzle migrations применяются при старте (runDrizzleMigrations в index.ts)
+#   4. Демо-данные заливаются (SEED_ON_START=true)
+#   5. Стартует бекенд API на :3000
+#   6. Фронтенд собирается и открывается на :5173
+#
+# Логин для демо-аккаунта:
+#   owner@meridian.demo   / demo1234
+#   manager@meridian.demo / demo1234
+# ──────────────────────────────────────────────────────────────────────────────
+
 services:
-  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: meridian_db
@@ -11,16 +28,16 @@ services:
       POSTGRES_PASSWORD: meridian_secret
       POSTGRES_DB: meridian
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U meridian -d meridian']
-      interval: 5s
+      interval: 3s
       timeout: 5s
-      retries: 10
+      retries: 15
 
-  # ── Backend ─────────────────────────────────────────────────────────────────
+  # ── Backend ──────────────────────────────────────────────────────────────────
   backend:
     build:
       context: ./backend
@@ -32,25 +49,50 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      PORT: 3000
+
+      # Database (points to the postgres service above)
+      DATABASE_URL: postgres://meridian:meridian_secret@postgres:5432/meridian
+
+      # JWT
+      JWT_TOKEN: 5eda2c4bef990fd3334cec4323833bb925ad65aa95a0c7ecacf56f07eed9a6bb2f6ab6bd3defa540423a7c7fe6c37d137c744c8104b03fb29304bb4623d9c570
+
+      # Seed demo data on first start (safe to re-run — uses upsert)
+      SEED_ON_START: 'true'
+
+      # AI Keys (замените на свои ключи)
+      DEEPSEEK_API_KEY: your-deepseek-api-key
+      DEEPSEEK_MODEL: deepseek-chat
+      ZAI_API_KEY: your-zai-api-key
+      ZAI_MODEL: gpt-4o
+      OPENROUTER_API_KEY: your-openrouter-api-key
+      OPENROUTER_MODEL: deepseek/deepseek-chat
+
+      # Attachments directory inside container
       TASK_ATTACHMENTS_DIR: /app/attachments
+
     ports:
       - '3000:3000'
     volumes:
       - task_attachments:/app/attachments
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/health 2>/dev/null || exit 0']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # ── Frontend (dev) ──────────────────────────────────────────────────────────
+  # ── Frontend ─────────────────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # API и WS напрямую к бекенду (порт 3000 проброшен на хост)
+        VITE_API_URL: http://localhost:3000/api
+        VITE_WS_HOSTNAME: ws://localhost:3000/api/ws
     container_name: meridian_frontend
     restart: unless-stopped
     depends_on:
       - backend
-    environment:
-      VITE_API_URL: http://localhost:3000
-      VITE_WS_HOSTNAME: localhost:3000
     ports:
       - '5173:80'
 

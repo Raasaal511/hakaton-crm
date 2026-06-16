@@ -22,6 +22,7 @@ import { API_VERSION } from '../infra/libs/apiVersion.js'
 import { CrmController } from '../modules/crm/crm.controller.js'
 import { CatalogController } from '../modules/catalog/catalog.controller.js'
 import { AiController } from '../modules/ai/ai.controller.js'
+import { ProjectsController } from '../modules/projects/projects.controller.js'
 import fastifyWebsocket from '@fastify/websocket'
 import { registerWsRoutes } from '../realtime/ws.server.js'
 
@@ -46,6 +47,7 @@ export class Server implements IServer {
     @inject(TYPES.CrmController) private _crm: CrmController,
     @inject(TYPES.CatalogController) private _catalog: CatalogController,
     @inject(TYPES.AiController) private _ai: AiController,
+    @inject(TYPES.ProjectsController) private _projects: ProjectsController,
   ) { }
 
   public async start() {
@@ -299,6 +301,16 @@ export class Server implements IServer {
         await instance.register(this._ai.enrichContact)
         await instance.register(this._ai.generateEmail)
         await instance.register(this._ai.chat)
+
+        // Projects
+        await instance.register(this._projects.listProjects)
+        await instance.register(this._projects.createProject)
+        await instance.register(this._projects.getProjectById)
+        await instance.register(this._projects.updateProject)
+        await instance.register(this._projects.deleteProject)
+        await instance.register(this._projects.getProjectMembers)
+        await instance.register(this._projects.addProjectMember)
+        await instance.register(this._projects.removeProjectMember)
 
       },
       { prefix: `/${serverConfig.apiPrefix}` }

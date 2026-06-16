@@ -1,0 +1,17 @@
+{
+  "jwt": {
+    "token": "JWT_TOKEN"
+  },
+  "deepseek": {
+    "apiKey": "DEEPSEEK_API_KEY",
+    "model": "DEEPSEEK_MODEL"
+  },
+  "zai": {
+    "apiKey": "ZAI_API_KEY",
+    "model": "ZAI_MODEL"
+  },
+  "openrouter": {
+    "apiKey": "OPENROUTER_API_KEY",
+    "model": "OPENROUTER_MODEL"
+  }
+}

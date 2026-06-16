@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from 'shared/ui'
 import { PageHeader } from 'shared/ui/PageHeader/PageHeader'
-import { buildAiContext, streamInto, STARTER_PROMPTS } from 'shared/lib/ai'
+import { useAiContext, streamInto, STARTER_PROMPTS, type AiContext } from 'shared/lib/ai'
 import { organizationModel } from 'entities/organization'
 import { userModel } from 'entities/user'
 import { aiAPI } from 'shared/api/requests/ai'
@@ -104,6 +104,22 @@ function SourceBadge({ source }: { source?: Source }) {
   )
 }
 
+function useAiPageContext() {
+  const org = organizationModel.selectors.useCurrentOrganization()
+  const user = userModel.selectors.useUser()
+  const managerName = user ? `${user.firstname} ${user.lastname ?? ''}`.trim() : 'Менеджер'
+  return useAiContext(org?.id, {
+    orgName: org?.name ?? 'Meridian',
+    managerName,
+  })
+}
+
+function aiSystemPrompt(ctx: AiContext) {
+  return `Ты CRM-ассистент Meridian. Контекст организации: ${JSON.stringify(ctx)}.
+В массиве leads — актуальные лиды/сделки. Используй их названия, этапы и суммы в ответах.
+Отвечай кратко (3-5 предложений), на русском языке, по делу. Помогаешь менеджерам по продажам принимать решения.`
+}
+
 // ── Chat Tab ──────────────────────────────────────────────────────────────────
 type Message = { role: 'user' | 'ai'; text: string; source?: Source }
 
@@ -114,8 +130,7 @@ function ChatTab() {
   const [aiModel, setAiModel] = useState('AI')
   const cancelRef = useRef<(() => void) | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const org = organizationModel.selectors.useCurrentOrganization()
-  const ctx = buildAiContext(org?.id)
+  const { ctx } = useAiPageContext()
 
   useEffect(() => {
     aiAPI.getStatus().then((s) => setAiModel(s.available ? s.model : 'Локальный AI'))
@@ -139,8 +154,7 @@ function ChatTab() {
     }))
     history.push({ role: 'user', content: userText })
 
-    const systemPrompt = `Ты CRM-ассистент Meridian. Контекст организации: ${JSON.stringify(ctx)}.
-Отвечай кратко (3-5 предложений), на русском языке, по делу. Помогаешь менеджерам по продажам принимать решения.`
+    const systemPrompt = aiSystemPrompt(ctx)
 
     try {
       const { content, source } = await aiAPI.chat(history, systemPrompt)
@@ -225,15 +239,18 @@ function ChatTab() {
 
 // ── Insights Tab ──────────────────────────────────────────────────────────────
 function InsightsTab() {
-  const org = organizationModel.selectors.useCurrentOrganization()
-  const ctx = buildAiContext(org?.id)
+  const { ctx, isReady } = useAiPageContext()
   const [texts, setTexts] = useState<Record<string, string>>({})
   const [sources, setSources] = useState<Record<string, Source>>({})
   const [loaded, setLoaded] = useState<Record<string, boolean>>({})
   const cancelRefs = useRef<Record<string, () => void>>({})
+  const startedRef = useRef(false)
 
   useEffect(() => {
-    const systemPrompt = `Ты CRM-ассистент Meridian. Контекст: ${JSON.stringify(ctx)}. Отвечай кратко (2-3 предложения), на русском, по делу.`
+    if (!isReady || startedRef.current) return
+
+    startedRef.current = true
+    const systemPrompt = aiSystemPrompt(ctx)
     let cancelled = false
 
     async function loadCards() {
@@ -262,7 +279,7 @@ function InsightsTab() {
       cancelled = true
       Object.values(cancelRefs.current).forEach((c) => c())
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isReady, ctx])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -323,8 +340,7 @@ function GenerateTab() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
   const cancelRef = useRef<(() => void) | null>(null)
-  const org = organizationModel.selectors.useCurrentOrganization()
-  const ctx = buildAiContext(org?.id)
+  const { ctx } = useAiPageContext()
 
   const generate = useCallback(async () => {
     if (isGenerating) return
@@ -333,7 +349,7 @@ function GenerateTab() {
     setSource(undefined)
     setIsGenerating(true)
 
-    const systemPrompt = `Ты CRM-ассистент Meridian. Контекст организации: ${JSON.stringify(ctx)}. Пиши на русском языке, профессионально и структурированно.`
+    const systemPrompt = aiSystemPrompt(ctx)
 
     try {
       const { content, source: src } = await aiAPI.chat(

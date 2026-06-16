@@ -206,18 +206,14 @@ export function Sidebar({
           <div className={styles.divider} />
 
           <N to="/finance"  icon={CircleDollarSign} label="Финансы"  active={active('/finance')}  c={navCollapsed} onClick={settle} />
-          <N to="/projects" icon={FolderKanban}     label="Проекты"  active={active('/projects')} c={navCollapsed} onClick={settle} />
           <N to="/ai"       icon={Bot}              label="AI"       active={active('/ai')}       c={navCollapsed} onClick={settle} badge="AI" />
           <N to="/reports"  icon={BarChart3}        label="Отчёты"   active={active('/reports')}  c={navCollapsed} onClick={settle} />
 
-          {(canManage || canViewOrgAnalytics) && currentOrg && (
+          {canManage && currentOrg && (
             <>
               <div className={styles.divider} />
-              {canManage && !currentOrg.isPersonal && (
+              {!currentOrg.isPersonal && (
                 <N to={`/organizations/${currentOrg.id}/users`}    icon={Users}    label="Участники" active={active(`/organizations/${currentOrg.id}/users`)}    c={navCollapsed} onClick={settle} />
-              )}
-              {canViewOrgAnalytics && (
-                <N to={`/organizations/${currentOrg.id}/analytics`} icon={BarChart3} label="Аналитика" active={active(`/organizations/${currentOrg.id}/analytics`)} c={navCollapsed} onClick={settle} />
               )}
               {canManage && (
                 <N to={`/organizations/${currentOrg.id}/settings`}  icon={Settings}  label="Настройки" active={active(`/organizations/${currentOrg.id}/settings`)}  c={navCollapsed} onClick={settle} />

@@ -51,4 +51,8 @@ export const qk = {
   catalogWarehouses: (orgId: number) => ['catalog', orgId, 'warehouses'] as const,
   catalogStockMovements: (orgId: number, productId?: number) => ['catalog', orgId, 'stock-movements', productId] as const,
   catalogInventorySummary: (orgId: number) => ['catalog', orgId, 'inventory-summary'] as const,
+  // Projects
+  projects: (orgId: number, filter?: object) => ['projects', orgId, filter] as const,
+  project: (orgId: number, id: number) => ['projects', orgId, id] as const,
+  projectMembers: (id: number) => ['projects', id, 'members'] as const,
 } as const

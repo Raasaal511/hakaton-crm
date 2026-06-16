@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Bot, Send, X, Sparkles, Loader2, Wifi, WifiOff } from 'lucide-react'
-import { buildAiContext } from 'shared/lib/ai'
-import { streamInto } from 'shared/lib/ai'
+import { useAiContext, streamInto } from 'shared/lib/ai'
 import { aiAPI } from 'shared/api/requests/ai'
 import { organizationModel } from 'entities/organization'
+import { userModel } from 'entities/user'
 import styles from './AiCopilot.module.css'
 
 type Source = 'deepseek' | 'local'
@@ -61,7 +61,12 @@ export function AiCopilot() {
   const cancelRef = useRef<(() => void) | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const org = organizationModel.selectors.useCurrentOrganization()
-  const ctx = buildAiContext(org?.id)
+  const user = userModel.selectors.useUser()
+  const managerName = user ? `${user.firstname} ${user.lastname ?? ''}`.trim() : 'Менеджер'
+  const { ctx } = useAiContext(org?.id, {
+    orgName: org?.name ?? 'Meridian',
+    managerName,
+  })
 
   // Check AI status on open
   useEffect(() => {
@@ -91,7 +96,8 @@ export function AiCopilot() {
     }))
     history.push({ role: 'user', content: userText })
 
-    const systemPrompt = `Ты CRM-ассистент PulsarCRM. Контекст: ${JSON.stringify(ctx)}.
+    const systemPrompt = `Ты CRM-ассистент PulsarCRM. Контекст организации: ${JSON.stringify(ctx)}.
+В массиве leads — актуальные лиды/сделки. Используй их названия, этапы и суммы в ответах.
 Отвечай кратко (3-5 предложений), на русском, по делу. Помогаешь менеджерам по продажам.`
 
     try {

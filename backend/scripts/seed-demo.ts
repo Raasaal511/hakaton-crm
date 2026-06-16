@@ -34,6 +34,8 @@ import {
   warehousesSchema,
   stockMovementsSchema,
   purchasesSchema,
+  projectsSchema,
+  projectMembersSchema,
 } from '../src/infra/database/drizzle/schema.js'
 
 // ── DB connection ─────────────────────────────────────────────────────────────
@@ -573,6 +575,107 @@ async function main() {
   }
   log('communications', commCreated, commDefs.length)
   log('activity entries (stage changes)', actCreated, stageActs.length)
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Projects
+  // ══════════════════════════════════════════════════════════════════════════
+  const projectDefs = [
+    {
+      name: 'Внедрение CRM Meridian',
+      description: 'Полное внедрение CRM-системы для отдела продаж: настройка, обучение персонала, интеграция с 1С.',
+      status: 'active',
+      priority: 'high',
+      progress: 65,
+      budget: 850_000,
+      color: '#6366f1',
+      startDaysAgo: 45,
+      endDaysFromNow: 30,
+    },
+    {
+      name: 'Редизайн корпоративного сайта',
+      description: 'Полная переработка UI/UX сайта компании. Новый дизайн, адаптив, SEO-оптимизация.',
+      status: 'active',
+      priority: 'medium',
+      progress: 40,
+      budget: 320_000,
+      color: '#10b981',
+      startDaysAgo: 20,
+      endDaysFromNow: 45,
+    },
+    {
+      name: 'Мобильное приложение для клиентов',
+      description: 'Разработка мобильного приложения iOS/Android для клиентского портала.',
+      status: 'planning',
+      priority: 'high',
+      progress: 10,
+      budget: 1_500_000,
+      color: '#f59e0b',
+      startDaysAgo: 5,
+      endDaysFromNow: 120,
+    },
+    {
+      name: 'Автоматизация складского учёта',
+      description: 'Интеграция WMS-системы со складом. Штрихкоды, инвентаризация, отчётность.',
+      status: 'completed',
+      priority: 'medium',
+      progress: 100,
+      budget: 450_000,
+      color: '#06b6d4',
+      startDaysAgo: 90,
+      endDaysFromNow: -10,
+    },
+    {
+      name: 'Запуск нового продукта B2B',
+      description: 'Вывод на рынок новой линейки B2B-решений: маркетинг, продажи, партнёрская сеть.',
+      status: 'on_hold',
+      priority: 'low',
+      progress: 25,
+      budget: 600_000,
+      color: '#8b5cf6',
+      startDaysAgo: 30,
+      endDaysFromNow: 60,
+    },
+  ]
+
+  let projCreated = 0
+  const projects: Array<{ id: number }> = []
+  for (const p of projectDefs) {
+    const [existing] = await db.select({ id: projectsSchema.id })
+      .from(projectsSchema)
+      .where(and(eq(projectsSchema.name, p.name), eq(projectsSchema.organizationId, org.id)))
+      .limit(1)
+    if (existing) {
+      projects.push(existing)
+      continue
+    }
+    const startDate = new Date(); startDate.setDate(startDate.getDate() - p.startDaysAgo)
+    const endDate = new Date(); endDate.setDate(endDate.getDate() + p.endDaysFromNow)
+    const [proj] = await db.insert(projectsSchema).values({
+      organizationId: org.id,
+      ownerUserId: owner.id,
+      name: p.name,
+      description: p.description,
+      status: p.status,
+      priority: p.priority,
+      progress: p.progress,
+      budget: p.budget,
+      currency: 'RUB',
+      color: p.color,
+      startDate,
+      endDate,
+    }).returning({ id: projectsSchema.id })
+    if (proj) {
+      projects.push(proj)
+      projCreated++
+      // add members
+      await db.insert(projectMembersSchema).values({ projectId: proj.id, userId: owner.id, role: 'owner' }).onConflictDoNothing()
+      const extraUser = users.find(u => u.id !== owner.id)
+      if (extraUser) {
+        await db.insert(projectMembersSchema).values({ projectId: proj.id, userId: extraUser.id, role: 'member' }).onConflictDoNothing()
+      }
+    }
+  }
+  log('projects', projCreated, projectDefs.length)
 
   // ══════════════════════════════════════════════════════════════════════════
   // Done

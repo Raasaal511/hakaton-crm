@@ -9,6 +9,7 @@ import { formatRubles } from 'shared/lib/crmDemoData'
 import { organizationModel } from 'entities/organization'
 import { catalogAPI, type CatalogService } from 'shared/api/requests/catalog'
 import { qk } from 'shared/api/queryKeys'
+import { ServiceForm } from 'features/catalog/ServiceForm'
 import styles from './ServicesPage.module.css'
 
 const SERVICE_COLORS = ['#7c3aed', '#0f766e', '#0369a1', '#d97706', '#dc2626', '#0ea5e9']
@@ -56,8 +57,20 @@ export function ServicesPage() {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [view, setView] = useState<'grid' | 'table'>('table')
+  const [formOpen, setFormOpen] = useState(false)
+  const [editService, setEditService] = useState<CatalogService | null>(null)
   const org = organizationModel.selectors.useCurrentOrganization()
   const queryClient = useQueryClient()
+
+  function openCreate() {
+    setEditService(null)
+    setFormOpen(true)
+  }
+
+  function openEdit(service: CatalogService) {
+    setEditService(service)
+    setFormOpen(true)
+  }
 
   const { data: servicesData, isLoading } = useQuery({
     queryKey: qk.catalogServices(org?.id ?? 0, { limit: 200 }),
@@ -194,7 +207,7 @@ export function ServicesPage() {
                   <List size={14} />
                 </button>
               </div>
-              <Button variant="primary" size="sm" iconLeft={<Plus size={13} />}>
+              <Button variant="primary" size="sm" iconLeft={<Plus size={13} />} onClick={openCreate}>
                 Добавить услугу
               </Button>
             </>
@@ -235,6 +248,11 @@ export function ServicesPage() {
                 <p className={styles.emptyText}>
                   {search ? 'Измените критерии поиска' : 'Добавьте первую услугу в каталог'}
                 </p>
+                {!search && (
+                  <Button variant="primary" size="sm" iconLeft={<Plus size={13} />} onClick={openCreate}>
+                    Добавить услугу
+                  </Button>
+                )}
               </div>
             ) : (
               <div className={styles.grid}>
@@ -249,6 +267,10 @@ export function ServicesPage() {
               data={tableData}
               loading={isLoading}
               bulkActions={bulkActions}
+              onRowClick={(row) => {
+                const service = services.find((s) => s.id === row.numericId)
+                if (service) openEdit(service)
+              }}
               emptyState={
                 <div className={styles.emptyState}>
                   <Briefcase size={40} strokeWidth={1.5} />
@@ -257,7 +279,7 @@ export function ServicesPage() {
                     {search ? 'Измените критерии поиска' : 'Добавьте первую услугу в каталог'}
                   </p>
                   {!search && (
-                    <Button variant="primary" size="sm" iconLeft={<Plus size={13} />}>
+                    <Button variant="primary" size="sm" iconLeft={<Plus size={13} />} onClick={openCreate}>
                       Добавить услугу
                     </Button>
                   )}
@@ -267,6 +289,13 @@ export function ServicesPage() {
           </div>
         )}
       </div>
+
+      <ServiceForm
+        open={formOpen}
+        onClose={() => { setFormOpen(false); setEditService(null) }}
+        existing={editService}
+        categorySuggestions={categories}
+      />
     </AppLayout>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useUnit } from 'effector-react'
 import {
   DndContext,
@@ -21,8 +21,8 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
 import { useQueryClient } from '@tanstack/react-query'
-import { AppLayout, InlineEdit, Button, PipelineBoardSkeleton, Dropdown, FilterSelectTrigger, filterSelectDropdownClassName, type DropdownItem } from 'shared/ui'
-import { ArrowLeft, List, ListFilter, Settings, UserPlus, ArrowUpDown, Plus } from 'lucide-react'
+import { AppLayout, InlineEdit, Button, PipelineBoardSkeleton, PageHeader, Dropdown, FilterSelectTrigger, filterSelectDropdownClassName, type DropdownItem } from 'shared/ui'
+import { List, ListFilter, Settings, UserPlus, ArrowUpDown, Plus, X } from 'lucide-react'
 import {
   TaskCalendar,
   TaskCalendarViewToggle,
@@ -1167,37 +1167,31 @@ export function DepartmentPipelinePage() {
   return (
     <AppLayout>
       <div className={styles.page}>
-        <div className={styles.pageHeader}>
-          <div className={styles.titleSection}>
-            <button
-              type="button"
-              className={styles.backNavButton}
-              onClick={() => navigate(`/departments/${departmentId}`)}
-            >
-              <ArrowLeft size={18} strokeWidth={2} aria-hidden className={styles.backNavIcon} />
-              Все воронки раздела
-            </button>
-            <div className={styles.titleBlock}>
-              {canManagePipelines && !pipelineLocked ? (
-                <InlineEdit
-                  value={pipeline?.name ?? ''}
-                  onSave={handlePipelineNameSave}
-                  className={styles.title}
-                  placeholder="Название воронки"
-                />
-              ) : (
-                <h1 className={styles.title}>{pipeline?.name ?? '…'}</h1>
-              )}
-            </div>
-            {pipelineError && (
-              <div className={styles.error}>{pipelineError}</div>
-            )}
-            {boardNotice && (
-              <div className={styles.error} role="alert">
-                {boardNotice}
-              </div>
-            )}
-            <div className={styles.headerActions}>
+        <PageHeader
+          title={pipeline?.name ?? '…'}
+          titleNode={
+            canManagePipelines && !pipelineLocked ? (
+              <InlineEdit
+                value={pipeline?.name ?? ''}
+                onSave={handlePipelineNameSave}
+                className={styles.pageTitle}
+                placeholder="Название воронки"
+              />
+            ) : undefined
+          }
+          breadcrumb={[
+            { label: department.name, href: `/departments/${departmentId}` },
+            { label: 'Воронки' },
+          ]}
+          description={
+            visibleColumns.length > 0
+              ? `${visibleColumns.length} колонок · ${
+                  Object.values(tasksBoardState).reduce((s, t) => s + (t?.length ?? 0), 0)
+                } задач`
+              : undefined
+          }
+          actions={
+            <div className={styles.boardHeaderActions}>
               <TaskCalendarViewToggle
                 variant="board"
                 value={boardLayout}
@@ -1206,25 +1200,24 @@ export function DepartmentPipelinePage() {
                 className={styles.boardLayoutToggle}
               />
               <div className={styles.boardFiltersShell} ref={boardFiltersShellRef}>
-                <button
-                  type="button"
-                  id="board-filters-trigger"
-                  className={cn(
-                    styles.settingsBtn,
-                    styles.boardFiltersIconBtn,
-                    boardFiltersOpen && styles.boardFiltersBtnOpen,
-                  )}
-                  title="Фильтры"
+                <Button
+                  variant={boardFiltersOpen || hasActiveBoardFilter ? 'secondary' : 'ghost'}
+                  size="sm"
+                  iconLeft={<ListFilter size={14} />}
                   aria-label="Фильтры задач на доске"
                   aria-expanded={boardFiltersOpen}
                   aria-controls="board-filters-panel"
+                  className={cn(
+                    styles.boardFiltersIconBtn,
+                    hasActiveBoardFilter && styles.boardFiltersActiveDot,
+                  )}
                   onClick={() => setBoardFiltersOpen((v) => !v)}
                 >
-                  <ListFilter size={20} strokeWidth={1.75} aria-hidden />
-                  {hasActiveBoardFilter ? (
+                  Фильтры
+                  {hasActiveBoardFilter && (
                     <span className={styles.boardFiltersHeaderDot} aria-hidden />
-                  ) : null}
-                </button>
+                  )}
+                </Button>
 
                 {boardFiltersOpen ? (
                   <div
@@ -1246,33 +1239,45 @@ export function DepartmentPipelinePage() {
                       <span className={styles.boardFiltersSheetHandleBar} aria-hidden />
                     </div>
                     <div className={styles.boardFiltersSheetBody}>
-                    <label className={styles.boardFiltersSearchLabel}>
-                      <span className={styles.srOnly}>Поиск задач на доске</span>
-                      <svg
-                        className={styles.boardFiltersSearchIcon}
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        aria-hidden
-                      >
-                        <path
-                          d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                      <div className={styles.boardFiltersPanelHeader}>
+                        <span className={styles.boardFiltersPanelTitle}>Фильтры доски</span>
+                        <button
+                          type="button"
+                          className={styles.boardFiltersPanelClose}
+                          aria-label="Закрыть фильтры"
+                          onClick={() => setBoardFiltersOpen(false)}
+                        >
+                          <X size={16} strokeWidth={2} />
+                        </button>
+                      </div>
+
+                      <label className={styles.boardFiltersSearchLabel}>
+                        <span className={styles.srOnly}>Поиск задач на доске</span>
+                        <svg
+                          className={styles.boardFiltersSearchIcon}
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden
+                        >
+                          <path
+                            d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <input
+                          type="search"
+                          className={styles.boardFiltersSearchInput}
+                          placeholder="Название или описание…"
+                          value={boardSearch}
+                          onChange={(e) => setBoardSearch(e.target.value)}
+                          autoComplete="off"
                         />
-                      </svg>
-                      <input
-                        type="search"
-                        className={styles.boardFiltersSearchInput}
-                        placeholder="Название или описание…"
-                        value={boardSearch}
-                        onChange={(e) => setBoardSearch(e.target.value)}
-                        autoComplete="off"
-                      />
-                    </label>
+                      </label>
 
                     <div className={styles.boardFiltersGrid}>
                       {effectiveBoardLayout === 'list' ? (
@@ -1425,44 +1430,52 @@ export function DepartmentPipelinePage() {
                 ) : null}
               </div>
               {showDepartmentMembersNav && canManageMembers && (
-                <Link
-                  to={`/departments/${departmentId}/members`}
-                  className={styles.membersBtn}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconLeft={<UserPlus size={14} />}
                   title="Участники отдела"
+                  onClick={() => navigate(`/departments/${departmentId}/members`)}
                 >
-                  <UserPlus size={20} strokeWidth={1.75} aria-hidden />
-                </Link>
+                  Участники
+                </Button>
               )}
               {pipeline && canManagePipelines && !pipelineLocked ? (
-                <button
-                  type="button"
-                  className={styles.settingsBtn}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconLeft={<Settings size={14} />}
                   title="Настройки воронки"
-                  aria-label="Настройки воронки"
                   onClick={() =>
                     navigate(`/departments/${departmentId}/pipelines/${pipeline.id}/settings`)
                   }
                 >
-                  <Settings size={20} strokeWidth={1.75} aria-hidden />
-                </button>
+                  Настройки
+                </Button>
               ) : null}
               {!isMobileLayout &&
               canManagePipelines &&
               !pipelineLocked &&
               effectiveBoardLayout === 'kanban' ? (
-                <Button variant="primary" onClick={handleAddColumnClick}>
-                  + Добавить колонку
+                <Button variant="primary" size="sm" iconLeft={<Plus size={13} />} onClick={handleAddColumnClick}>
+                  Добавить колонку
                 </Button>
               ) : null}
               {!isMobileLayout && showListCreateChrome ? (
-                <Button variant="primary" onClick={() => openListCreateSheet()}>
-                  + Добавить задачу
+                <Button variant="primary" size="sm" iconLeft={<Plus size={13} />} onClick={() => openListCreateSheet()}>
+                  Добавить задачу
                 </Button>
               ) : null}
             </div>
+          }
+        />
+        {(pipelineError || boardNotice || deleteError) && (
+          <div style={{ padding: '0 1.5rem' }}>
+            {pipelineError && <p className={styles.error}>{pipelineError}</p>}
+            {boardNotice && <p className={styles.error} role="alert">{boardNotice}</p>}
+            {deleteError && <p className={styles.error}>{deleteError}</p>}
           </div>
-          {deleteError && <p className={styles.error}>{deleteError}</p>}
-        </div>
+        )}
 
         <div className={styles.boardWrapper}>
           {effectiveBoardLayout === 'calendar' ? (

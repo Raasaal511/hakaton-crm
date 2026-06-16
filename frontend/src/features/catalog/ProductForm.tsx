@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { FormModal, formStyles as s } from 'shared/ui/FormModal/FormModal'
@@ -28,25 +28,31 @@ const EMPTY: FormData = {
   unit: 'шт', stockQuantity: '0', categoryId: '',
 }
 
+function toFormData(product: Product): FormData {
+  return {
+    name: product.name ?? '',
+    sku: product.sku ?? '',
+    description: product.description ?? '',
+    price: String(product.price ?? 0),
+    costPrice: String(product.costPrice ?? 0),
+    unit: product.unit ?? 'шт',
+    stockQuantity: String(product.stockQuantity ?? 0),
+    categoryId: product.categoryId ? String(product.categoryId) : '',
+  }
+}
+
 export function ProductForm({ open, onClose, existing }: Props) {
   const org = organizationModel.selectors.useCurrentOrganization()
   const queryClient = useQueryClient()
 
-  const [form, setForm] = useState<FormData>(() =>
-    existing
-      ? {
-          name: existing.name ?? '',
-          sku: existing.sku ?? '',
-          description: existing.description ?? '',
-          price: String(existing.price ?? 0),
-          costPrice: String(existing.costPrice ?? 0),
-          unit: existing.unit ?? 'шт',
-          stockQuantity: String(existing.stockQuantity ?? 0),
-          categoryId: existing.categoryId ? String(existing.categoryId) : '',
-        }
-      : EMPTY,
-  )
+  const [form, setForm] = useState<FormData>(EMPTY)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
+
+  useEffect(() => {
+    if (!open) return
+    setForm(existing ? toFormData(existing) : EMPTY)
+    setErrors({})
+  }, [open, existing?.id])
 
   const { data: categoriesData } = useQuery({
     queryKey: qk.catalogCategories(org?.id ?? 0),

@@ -4,11 +4,29 @@
 
 ---
 
+## Быстрый запуск (Docker)
+
+```bash
+docker compose up --build -d
+```
+
+Откройте **http://localhost:5173**
+
+| Аккаунт | Email | Пароль |
+|---|---|---|
+| Владелец | owner@meridian.demo | demo1234 |
+| Менеджер | manager@meridian.demo | demo1234 |
+| Сотрудник | employee@meridian.demo | demo1234 |
+
+> Демо-данные заливаются автоматически при первом запуске (`SEED_ON_START=true`).
+
+---
+
 ## Быстрый запуск (Docker — рекомендуется)
 
 ```bash
 # 1. Запустить все сервисы одной командой
-docker compose up --build
+docker compose up --build -d
 
 # 2. В отдельном терминале заполнить демо-данными (первый раз)
 docker compose exec backend node dist/src/index.js # убедиться что запущен
