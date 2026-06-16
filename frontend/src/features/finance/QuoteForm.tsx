@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { FormModal, formStyles as s } from 'shared/ui/FormModal/FormModal'
-import { crmAPI } from 'shared/api/requests/crm'
+import { crmAPI, type SalesQuote } from 'shared/api/requests/crm'
 import { qk } from 'shared/api/queryKeys'
 import { organizationModel } from 'entities/organization'
 
 type Props = {
   open: boolean
   onClose: () => void
+  existing?: SalesQuote | null
+  onCreateInvoiceFromQuote?: (quote: SalesQuote) => void
 }
 
 type FormData = {
@@ -34,20 +36,39 @@ const EMPTY: FormData = {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'draft',    label: 'Черновик' },
-  { value: 'sent',     label: 'Отправлено' },
+  { value: 'draft', label: 'Черновик' },
+  { value: 'sent', label: 'Отправлено' },
   { value: 'accepted', label: 'Принято' },
   { value: 'rejected', label: 'Отклонено' },
-  { value: 'expired',  label: 'Истекло' },
+  { value: 'expired', label: 'Истекло' },
 ]
 
 const CURRENCY_OPTIONS = ['RUB', 'USD', 'EUR', 'KZT']
 
-export function QuoteForm({ open, onClose }: Props) {
+function toFormData(q: SalesQuote): FormData {
+  return {
+    number: q.number,
+    subtotal: String(q.subtotal),
+    discount: String(q.discount),
+    status: q.status,
+    currency: q.currency,
+    validUntil: q.validUntil ? q.validUntil.slice(0, 10) : '',
+    companyId: q.companyId ? String(q.companyId) : '',
+    dealId: q.dealId ? String(q.dealId) : '',
+  }
+}
+
+export function QuoteForm({ open, onClose, existing, onCreateInvoiceFromQuote }: Props) {
   const org = organizationModel.selectors.useCurrentOrganization()
   const queryClient = useQueryClient()
   const [form, setForm] = useState<FormData>(EMPTY)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
+
+  useEffect(() => {
+    if (!open) return
+    setForm(existing ? toFormData(existing) : EMPTY)
+    setErrors({})
+  }, [open, existing?.id])
 
   const { data: companiesData } = useQuery({
     queryKey: qk.crmCompanies(org?.id ?? 0, { limit: 100 }),
@@ -63,11 +84,11 @@ export function QuoteForm({ open, onClose }: Props) {
     staleTime: 60_000,
   })
 
-  const createMutation = useMutation({
+  const saveMutation = useMutation({
     mutationFn: (data: FormData) => {
       const sub = Number(data.subtotal) || 0
       const disc = Number(data.discount) || 0
-      return crmAPI.createQuote(org!.id, {
+      const payload = {
         number: data.number.trim(),
         subtotal: sub,
         discount: disc,
@@ -77,12 +98,15 @@ export function QuoteForm({ open, onClose }: Props) {
         validUntil: data.validUntil || undefined,
         companyId: data.companyId ? Number(data.companyId) : undefined,
         dealId: data.dealId ? Number(data.dealId) : undefined,
-      })
+      }
+      if (existing) {
+        return crmAPI.updateQuote(org!.id, existing.id, payload)
+      }
+      return crmAPI.createQuote(org!.id, payload)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.financeQuotes(org?.id ?? 0) })
       onClose()
-      setForm(EMPTY)
     },
   })
 
@@ -101,27 +125,40 @@ export function QuoteForm({ open, onClose }: Props) {
 
   function handleSubmit() {
     if (!validate()) return
-    createMutation.mutate(form)
+    saveMutation.mutate(form)
   }
 
   const sub = Number(form.subtotal) || 0
   const disc = Number(form.discount) || 0
   const total = Math.max(0, sub - disc)
-
   const companies = companiesData?.items ?? []
   const deals = dealsData?.items ?? []
+  const isEdit = Boolean(existing)
+  const canCreateInvoice = isEdit && existing?.status === 'accepted' && onCreateInvoiceFromQuote
 
   return (
     <FormModal
-      title="Новое коммерческое предложение"
+      title={isEdit ? 'Редактировать КП' : 'Новое коммерческое предложение'}
       open={open}
       onClose={onClose}
       footer={
         <>
+          {canCreateInvoice && (
+            <button
+              type="button"
+              className={s.cancelBtn}
+              onClick={() => {
+                onCreateInvoiceFromQuote!(existing!)
+                onClose()
+              }}
+            >
+              Создать счёт из КП
+            </button>
+          )}
           <button type="button" className={s.cancelBtn} onClick={onClose}>Отмена</button>
-          <button type="button" className={s.submitBtn} onClick={handleSubmit} disabled={createMutation.isPending}>
-            {createMutation.isPending && <Loader2 size={13} className={s.spin} />}
-            Создать КП
+          <button type="button" className={s.submitBtn} onClick={handleSubmit} disabled={saveMutation.isPending}>
+            {saveMutation.isPending && <Loader2 size={13} className={s.spin} />}
+            {isEdit ? 'Сохранить' : 'Создать КП'}
           </button>
         </>
       }
@@ -191,8 +228,8 @@ export function QuoteForm({ open, onClose }: Props) {
           )}
         </div>
 
-        {createMutation.isError && (
-          <div className={s.error}>Ошибка: {(createMutation.error as Error)?.message ?? 'Не удалось создать КП'}</div>
+        {saveMutation.isError && (
+          <div className={s.error}>Ошибка: {(saveMutation.error as Error)?.message ?? 'Не удалось сохранить КП'}</div>
         )}
       </div>
     </FormModal>

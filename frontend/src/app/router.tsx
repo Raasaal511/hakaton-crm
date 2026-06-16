@@ -59,7 +59,7 @@ const ProfileNotificationsPage = lazy(() =>
 const FinancePage = lazy(() => import('pages/finance/FinancePage').then((m) => ({ default: m.FinancePage })))
 const ProjectsPage = lazy(() => import('pages/stub/StubPage').then((m) => ({ default: m.ProjectsPage })))
 const AiPage = lazy(() => import('pages/ai/AiPage').then((m) => ({ default: m.AiPage })))
-const ReportsPage = lazy(() => import('pages/stub/StubPage').then((m) => ({ default: m.ReportsPage })))
+const ReportsPage = lazy(() => import('pages/reports').then((m) => ({ default: m.ReportsPage })))
 
 function RouteFallback() {
   return <RouteFallbackSkeleton />

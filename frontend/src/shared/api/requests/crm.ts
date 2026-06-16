@@ -217,6 +217,61 @@ export type LeadStats = {
   byStage: { stage: string; count: number; amount: number }[]
 }
 
+export type CrmReportPeriod = '7d' | '30d' | '90d' | 'all'
+
+export type CrmReportsResponse = {
+  period: CrmReportPeriod
+  range: { from: string | null; to: string }
+  overview: {
+    totalLeads: number
+    totalAmount: number
+    wonAmount: number
+    wonCount: number
+    lostCount: number
+    conversionRate: number
+    weightedPipeline: number
+    contactCount: number
+    companyCount: number
+    newLeads: number
+    newContacts: number
+    newCompanies: number
+  }
+  funnel: {
+    stage: string
+    stageName: string
+    color: string | null
+    position: number
+    count: number
+    amount: number
+    conversionFromPrev: number | null
+  }[]
+  trends: {
+    leadsCreated: { date: string; count: number; amount: number }[]
+    revenueWon: { date: string; amount: number }[]
+  }
+  byManager: {
+    userId: number | null
+    firstname: string
+    lastname: string | null
+    leadsCount: number
+    wonCount: number
+    totalAmount: number
+    wonAmount: number
+    conversionRate: number
+  }[]
+  bySource: { source: string; count: number; amount: number }[]
+  contactsByStatus: { status: string; count: number }[]
+  companiesByStatus: { status: string; count: number }[]
+  sales: {
+    quotesCount: number
+    quotesAmount: number
+    invoicesCount: number
+    invoicesPaid: number
+    invoicesOutstanding: number
+  }
+  communicationsByChannel: { channel: string; count: number }[]
+}
+
 export type CrmListFilter = {
   q?: string
   status?: string
@@ -319,6 +374,15 @@ export const crmAPI = {
   createDealStage: (orgId: number, dto: Partial<CrmDealStage> & { name: string }) =>
     axiosAPI.post<CrmDealStage>('/crm/deal-stages', dto, { params: { orgId } }).then((r) => r.data),
 
+  updateDealStage: (orgId: number, id: number, dto: Partial<CrmDealStage>) =>
+    axiosAPI.put<CrmDealStage>(`/crm/deal-stages/${id}`, dto, { params: { orgId } }).then((r) => r.data),
+
+  reorderDealStages: (orgId: number, order: { id: number; position: number }[]) =>
+    axiosAPI.put<CrmDealStage[]>('/crm/deal-stages/reorder', { order }, { params: { orgId } }).then((r) => r.data),
+
+  deleteDealStage: (orgId: number, id: number) =>
+    axiosAPI.delete(`/crm/deal-stages/${id}`, { params: { orgId } }),
+
   getDeals: (orgId: number, filter?: CrmListFilter) =>
     axiosAPI.get<CrmDeal[] | { items: CrmDeal[]; total: number }>('/crm/deals', {
       params: { orgId, ...filter },
@@ -329,6 +393,9 @@ export const crmAPI = {
 
   getDealStats: (orgId: number) =>
     axiosAPI.get<DealStats>('/crm/deals/stats', { params: { orgId } }).then((r) => r.data),
+
+  getReports: (orgId: number, period: CrmReportPeriod = '30d') =>
+    axiosAPI.get<CrmReportsResponse>('/crm/reports', { params: { orgId, period } }).then((r) => r.data),
 
   getDocuments: (orgId: number, entityType: string, entityId: number) =>
     axiosAPI.get<CrmDocument[]>(`/crm/documents/${entityType}/${entityId}`, { params: { orgId } }).then((r) => r.data),
@@ -354,11 +421,23 @@ export const crmAPI = {
   createQuote: (orgId: number, dto: Partial<SalesQuote> & { number: string }) =>
     axiosAPI.post<SalesQuote>('/crm/sales/quotes', dto, { params: { orgId } }).then((r) => r.data),
 
+  updateQuote: (orgId: number, id: number, dto: Partial<SalesQuote>) =>
+    axiosAPI.put<SalesQuote>(`/crm/sales/quotes/${id}`, dto, { params: { orgId } }).then((r) => r.data),
+
+  deleteQuote: (orgId: number, id: number) =>
+    axiosAPI.delete(`/crm/sales/quotes/${id}`, { params: { orgId } }),
+
   getInvoices: (orgId: number) =>
     axiosAPI.get<SalesInvoice[]>('/crm/sales/invoices', { params: { orgId } }).then((r) => r.data),
 
   createInvoice: (orgId: number, dto: Partial<SalesInvoice> & { number: string }) =>
     axiosAPI.post<SalesInvoice>('/crm/sales/invoices', dto, { params: { orgId } }).then((r) => r.data),
+
+  updateInvoice: (orgId: number, id: number, dto: Partial<SalesInvoice>) =>
+    axiosAPI.put<SalesInvoice>(`/crm/sales/invoices/${id}`, dto, { params: { orgId } }).then((r) => r.data),
+
+  deleteInvoice: (orgId: number, id: number) =>
+    axiosAPI.delete(`/crm/sales/invoices/${id}`, { params: { orgId } }),
 
   // Activity
   getActivity: (orgId: number, entityType: string, entityId: number) =>

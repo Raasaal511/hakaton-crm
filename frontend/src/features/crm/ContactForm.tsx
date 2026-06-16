@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { FormModal, formStyles as s } from 'shared/ui/FormModal/FormModal'
 import { crmAPI, type CrmContact } from 'shared/api/requests/crm'
 import { qk } from 'shared/api/queryKeys'
 import { organizationModel } from 'entities/organization'
+import { CONTACT_STATUS_OPTIONS } from 'shared/lib/contactStatus'
 
 type Props = {
   open: boolean
@@ -22,18 +23,13 @@ type FormData = {
   status: string
   notes: string
   companyId: string
+  segmentId: string
 }
 
 const EMPTY: FormData = {
   firstName: '', lastName: '', email: '', phone: '',
-  position: '', source: '', status: 'active', notes: '', companyId: '',
+  position: '', source: '', status: 'active', notes: '', companyId: '', segmentId: '',
 }
-
-const STATUS_OPTIONS = [
-  { value: 'active', label: 'Активный' },
-  { value: 'inactive', label: 'Неактивный' },
-  { value: 'prospect', label: 'Перспективный' },
-]
 
 const SOURCE_OPTIONS = [
   { value: '', label: 'Не указан' },
@@ -45,30 +41,44 @@ const SOURCE_OPTIONS = [
   { value: 'Партнёры', label: 'Партнёры' },
 ]
 
+function formFromContact(contact: CrmContact): FormData {
+  return {
+    firstName: contact.firstName ?? '',
+    lastName: contact.lastName ?? '',
+    email: contact.email ?? '',
+    phone: contact.phone ?? '',
+    position: contact.position ?? '',
+    source: contact.source ?? '',
+    status: contact.status ?? 'active',
+    notes: contact.notes ?? '',
+    companyId: contact.companyId ? String(contact.companyId) : '',
+    segmentId: contact.segmentId ? String(contact.segmentId) : '',
+  }
+}
+
 export function ContactForm({ open, onClose, existing }: Props) {
   const org = organizationModel.selectors.useCurrentOrganization()
   const queryClient = useQueryClient()
 
-  const [form, setForm] = useState<FormData>(() =>
-    existing
-      ? {
-          firstName: existing.firstName ?? '',
-          lastName: existing.lastName ?? '',
-          email: existing.email ?? '',
-          phone: existing.phone ?? '',
-          position: existing.position ?? '',
-          source: existing.source ?? '',
-          status: existing.status ?? 'active',
-          notes: existing.notes ?? '',
-          companyId: existing.companyId ? String(existing.companyId) : '',
-        }
-      : EMPTY,
-  )
+  const [form, setForm] = useState<FormData>(EMPTY)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
 
+  useEffect(() => {
+    if (!open) return
+    setForm(existing ? formFromContact(existing) : EMPTY)
+    setErrors({})
+  }, [open, existing?.id])
+
   const { data: companiesData } = useQuery({
-    queryKey: qk.crmCompanies(org?.id ?? 0, { limit: 100 }),
-    queryFn: () => crmAPI.getCompanies(org!.id, { limit: 100 }),
+    queryKey: qk.crmCompanies(org?.id ?? 0, { limit: 200 }),
+    queryFn: () => crmAPI.getCompanies(org!.id, { limit: 200 }),
+    enabled: Boolean(org?.id) && open,
+    staleTime: 60_000,
+  })
+
+  const { data: segments = [] } = useQuery({
+    queryKey: qk.crmSegments(org?.id ?? 0),
+    queryFn: () => crmAPI.getSegments(org!.id),
     enabled: Boolean(org?.id) && open,
     staleTime: 60_000,
   })
@@ -85,6 +95,7 @@ export function ContactForm({ open, onClose, existing }: Props) {
         status: data.status,
         notes: data.notes.trim() || undefined,
         companyId: data.companyId ? Number(data.companyId) : undefined,
+        segmentId: data.segmentId ? Number(data.segmentId) : undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['crm', org?.id, 'contacts'] })
@@ -105,6 +116,7 @@ export function ContactForm({ open, onClose, existing }: Props) {
         status: data.status,
         notes: data.notes.trim() || undefined,
         companyId: data.companyId ? Number(data.companyId) : null,
+        segmentId: data.segmentId ? Number(data.segmentId) : null,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['crm', org?.id, 'contacts'] })
@@ -208,9 +220,19 @@ export function ContactForm({ open, onClose, existing }: Props) {
           <div className={s.field}>
             <label className={s.label}>Статус</label>
             <select className={s.select} value={form.status} onChange={(e) => set('status', e.target.value)}>
-              {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {CONTACT_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
+        </div>
+
+        <div className={s.field}>
+          <label className={s.label}>Сегмент</label>
+          <select className={s.select} value={form.segmentId} onChange={(e) => set('segmentId', e.target.value)}>
+            <option value="">— без сегмента —</option>
+            {segments.map((seg) => (
+              <option key={seg.id} value={seg.id}>{seg.name}</option>
+            ))}
+          </select>
         </div>
 
         <div className={s.field}>

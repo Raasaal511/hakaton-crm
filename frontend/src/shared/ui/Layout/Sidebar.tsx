@@ -190,7 +190,7 @@ export function Sidebar({
           <N to="/crm/leads"    icon={Target}    label="Лиды"     active={active('/crm/leads')}    c={navCollapsed} onClick={settle} />
 
           <div className={styles.section}>
-            <span className={styles.sectionLabel}>Продажи</span>
+            <span className={styles.sectionLabel}>Задачи</span>
           </div>
           {currentOrg && (
             <N to={`/organizations/${currentOrg.id}`} icon={Zap} label="Воронки" active={location.pathname === `/organizations/${currentOrg.id}`} c={navCollapsed} onClick={settle} />

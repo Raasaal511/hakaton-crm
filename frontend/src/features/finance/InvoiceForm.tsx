@@ -1,14 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { FormModal, formStyles as s } from 'shared/ui/FormModal/FormModal'
-import { crmAPI } from 'shared/api/requests/crm'
+import { crmAPI, type SalesInvoice } from 'shared/api/requests/crm'
 import { qk } from 'shared/api/queryKeys'
 import { organizationModel } from 'entities/organization'
 
 type Props = {
   open: boolean
   onClose: () => void
+  existing?: SalesInvoice | null
+  prefill?: {
+    quoteId?: number
+    total?: number
+    dealId?: number
+    number?: string
+  }
 }
 
 type FormData = {
@@ -19,9 +26,8 @@ type FormData = {
   currency: string
   issuedAt: string
   dueAt: string
-  companyId: string
   dealId: string
-  notes: string
+  quoteId: string
 }
 
 const EMPTY: FormData = {
@@ -32,33 +38,57 @@ const EMPTY: FormData = {
   currency: 'RUB',
   issuedAt: new Date().toISOString().slice(0, 10),
   dueAt: '',
-  companyId: '',
   dealId: '',
-  notes: '',
+  quoteId: '',
 }
 
 const STATUS_OPTIONS = [
-  { value: 'draft',    label: 'Черновик' },
-  { value: 'sent',     label: 'Отправлен' },
-  { value: 'paid',     label: 'Оплачен' },
-  { value: 'overdue',  label: 'Просрочен' },
+  { value: 'draft', label: 'Черновик' },
+  { value: 'sent', label: 'Отправлен' },
+  { value: 'paid', label: 'Оплачен' },
+  { value: 'overdue', label: 'Просрочен' },
   { value: 'cancelled', label: 'Отменён' },
 ]
 
 const CURRENCY_OPTIONS = ['RUB', 'USD', 'EUR', 'KZT']
 
-export function InvoiceForm({ open, onClose }: Props) {
+function toFormData(inv: SalesInvoice): FormData {
+  return {
+    number: inv.number,
+    total: String(inv.total),
+    paidAmount: String(inv.paidAmount),
+    status: inv.status,
+    currency: inv.currency,
+    issuedAt: inv.issuedAt ? inv.issuedAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    dueAt: inv.dueAt ? inv.dueAt.slice(0, 10) : '',
+    dealId: inv.dealId ? String(inv.dealId) : '',
+    quoteId: inv.quoteId ? String(inv.quoteId) : '',
+  }
+}
+
+export function InvoiceForm({ open, onClose, existing, prefill }: Props) {
   const org = organizationModel.selectors.useCurrentOrganization()
   const queryClient = useQueryClient()
   const [form, setForm] = useState<FormData>(EMPTY)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
 
-  const { data: companiesData } = useQuery({
-    queryKey: qk.crmCompanies(org?.id ?? 0, { limit: 100 }),
-    queryFn: () => crmAPI.getCompanies(org!.id, { limit: 100 }),
-    enabled: Boolean(org?.id) && open,
-    staleTime: 60_000,
-  })
+  useEffect(() => {
+    if (!open) return
+    if (existing) {
+      setForm(toFormData(existing))
+    } else if (prefill) {
+      setForm({
+        ...EMPTY,
+        number: prefill.number ?? '',
+        total: prefill.total != null ? String(prefill.total) : '',
+        dealId: prefill.dealId ? String(prefill.dealId) : '',
+        quoteId: prefill.quoteId ? String(prefill.quoteId) : '',
+      })
+    } else {
+      setForm(EMPTY)
+    }
+    setErrors({})
+  }, [open, existing?.id, prefill?.quoteId])
 
   const { data: dealsData } = useQuery({
     queryKey: qk.crmDeals(org?.id ?? 0, {}),
@@ -67,9 +97,9 @@ export function InvoiceForm({ open, onClose }: Props) {
     staleTime: 60_000,
   })
 
-  const createMutation = useMutation({
-    mutationFn: (data: FormData) =>
-      crmAPI.createInvoice(org!.id, {
+  const saveMutation = useMutation({
+    mutationFn: (data: FormData) => {
+      const payload = {
         number: data.number.trim(),
         total: Number(data.total) || 0,
         paidAmount: Number(data.paidAmount) || 0,
@@ -77,13 +107,17 @@ export function InvoiceForm({ open, onClose }: Props) {
         currency: data.currency,
         issuedAt: data.issuedAt || undefined,
         dueAt: data.dueAt || undefined,
-        companyId: data.companyId ? Number(data.companyId) : undefined,
         dealId: data.dealId ? Number(data.dealId) : undefined,
-      }),
+        quoteId: data.quoteId ? Number(data.quoteId) : undefined,
+      }
+      if (existing) {
+        return crmAPI.updateInvoice(org!.id, existing.id, payload)
+      }
+      return crmAPI.createInvoice(org!.id, payload)
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.financeInvoices(org?.id ?? 0) })
       onClose()
-      setForm(EMPTY)
     },
   })
 
@@ -102,23 +136,23 @@ export function InvoiceForm({ open, onClose }: Props) {
 
   function handleSubmit() {
     if (!validate()) return
-    createMutation.mutate(form)
+    saveMutation.mutate(form)
   }
 
-  const companies = companiesData?.items ?? []
   const deals = dealsData?.items ?? []
+  const isEdit = Boolean(existing)
 
   return (
     <FormModal
-      title="Новый счёт"
+      title={isEdit ? 'Редактировать счёт' : prefill?.quoteId ? 'Счёт из КП' : 'Новый счёт'}
       open={open}
       onClose={onClose}
       footer={
         <>
           <button type="button" className={s.cancelBtn} onClick={onClose}>Отмена</button>
-          <button type="button" className={s.submitBtn} onClick={handleSubmit} disabled={createMutation.isPending}>
-            {createMutation.isPending && <Loader2 size={13} className={s.spin} />}
-            Создать счёт
+          <button type="button" className={s.submitBtn} onClick={handleSubmit} disabled={saveMutation.isPending}>
+            {saveMutation.isPending && <Loader2 size={13} className={s.spin} />}
+            {isEdit ? 'Сохранить' : 'Создать счёт'}
           </button>
         </>
       }
@@ -163,32 +197,24 @@ export function InvoiceForm({ open, onClose }: Props) {
 
         <div className={s.fieldRow}>
           <div className={s.field}>
-            <label className={s.label}>Компания</label>
-            <select className={s.select} value={form.companyId} onChange={(e) => set('companyId', e.target.value)}>
-              <option value="">— не выбрана —</option>
-              {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-          <div className={s.field}>
             <label className={s.label}>Валюта</label>
             <select className={s.select} value={form.currency} onChange={(e) => set('currency', e.target.value)}>
               {CURRENCY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+          {deals.length > 0 && (
+            <div className={s.field}>
+              <label className={s.label}>Сделка</label>
+              <select className={s.select} value={form.dealId} onChange={(e) => set('dealId', e.target.value)}>
+                <option value="">— не привязана —</option>
+                {deals.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+              </select>
+            </div>
+          )}
         </div>
 
-        {deals.length > 0 && (
-          <div className={s.field}>
-            <label className={s.label}>Сделка</label>
-            <select className={s.select} value={form.dealId} onChange={(e) => set('dealId', e.target.value)}>
-              <option value="">— не привязана —</option>
-              {deals.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
-            </select>
-          </div>
-        )}
-
-        {createMutation.isError && (
-          <div className={s.error}>Ошибка: {(createMutation.error as Error)?.message ?? 'Не удалось создать счёт'}</div>
+        {saveMutation.isError && (
+          <div className={s.error}>Ошибка: {(saveMutation.error as Error)?.message ?? 'Не удалось сохранить счёт'}</div>
         )}
       </div>
     </FormModal>

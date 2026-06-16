@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Search, Download, Building2, Users, Loader2 } from 'lucide-react'
 import { AppLayout } from 'shared/ui'
@@ -8,13 +8,11 @@ import { crmAPI, type CrmCompany } from 'shared/api/requests/crm'
 import { qk } from 'shared/api/queryKeys'
 import { organizationModel } from 'entities/organization'
 import { CompanyForm } from 'features/crm/CompanyForm'
+import { CompanyDetailPanel } from 'features/crm/CompanyDetailPanel'
+import { CompanyStatusSelect } from 'features/crm/CompanyStatusSelect'
+import { LogCommunicationModal, type CommChannel } from 'features/crm/LogCommunicationModal'
+import { type CompanyStatus } from 'shared/lib/companyStatus'
 import styles from './CompaniesPage.module.css'
-
-const STATUS_LABELS: Record<string, string> = {
-  active: 'Активная',
-  inactive: 'Неактивная',
-  prospect: 'Перспективная',
-}
 
 const AVATAR_COLORS = ['#4361ee', '#7c3aed', '#0f766e', '#dc2626', '#d97706', '#0369a1', '#1a7f37', '#9d174d']
 
@@ -28,15 +26,26 @@ function getInitials(name: string) {
   return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
 }
 
-function CompanyRow({ company, onDelete }: { company: CrmCompany; onDelete: (id: number) => void }) {
+function CompanyRow({
+  company,
+  active,
+  onClick,
+  onStatusChange,
+  statusUpdating,
+}: {
+  company: CrmCompany
+  active: boolean
+  onClick: () => void
+  onStatusChange: (id: number, status: CompanyStatus) => void
+  statusUpdating: boolean
+}) {
   const color = getAvatarColor(company.name)
-  const statusCls =
-    company.status === 'active' ? styles.statusActive
-    : company.status === 'inactive' ? styles.statusInactive
-    : styles.statusProspect
 
   return (
-    <tr>
+    <tr
+      className={active ? styles.rowActive : undefined}
+      onClick={onClick}
+    >
       <td>
         <div className={styles.companyCell}>
           <div className={styles.companyAvatar} style={{ background: color }}>
@@ -65,11 +74,12 @@ function CompanyRow({ company, onDelete }: { company: CrmCompany; onDelete: (id:
           {company.email ?? '—'}
         </span>
       </td>
-      <td>
-        <span className={`${styles.statusBadge} ${statusCls}`}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', display: 'inline-block' }} />
-          {STATUS_LABELS[company.status] ?? company.status}
-        </span>
+      <td onClick={(e) => e.stopPropagation()}>
+        <CompanyStatusSelect
+          value={company.status}
+          onChange={(status) => onStatusChange(company.id, status)}
+          disabled={statusUpdating}
+        />
       </td>
       <td>
         {company.annualRevenue != null && company.annualRevenue > 0
@@ -85,6 +95,8 @@ export function CompaniesPage() {
   const [industryFilter, setIndustryFilter] = useState<string>('all')
   const [formOpen, setFormOpen] = useState(false)
   const [editCompany, setEditCompany] = useState<CrmCompany | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState<CrmCompany | null>(null)
+  const [commChannel, setCommChannel] = useState<CommChannel | null>(null)
   const org = organizationModel.selectors.useCurrentOrganization()
   const queryClient = useQueryClient()
 
@@ -95,12 +107,33 @@ export function CompaniesPage() {
     staleTime: 30_000,
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => crmAPI.deleteCompany(org!.id, id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: qk.crmCompanies(org?.id ?? 0) }),
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: CompanyStatus }) =>
+      crmAPI.updateCompany(org!.id, id, { status }),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['crm', org?.id, 'companies'] })
+      if (selectedCompany?.id === updated.id) {
+        setSelectedCompany(updated)
+      }
+    },
   })
 
+  function handleStatusChange(id: number, status: CompanyStatus) {
+    updateStatusMutation.mutate({ id, status })
+  }
+
+  function openEdit(company: CrmCompany) {
+    setEditCompany(company)
+    setFormOpen(true)
+  }
+
   const companies = useMemo(() => data?.items ?? [], [data])
+
+  useEffect(() => {
+    if (!selectedCompany) return
+    const fresh = companies.find((c) => c.id === selectedCompany.id)
+    if (fresh) setSelectedCompany(fresh)
+  }, [companies, selectedCompany?.id])
 
   const industries = useMemo(
     () => ['all', ...Array.from(new Set(companies.map((c) => c.industry).filter(Boolean) as string[]))],
@@ -133,10 +166,10 @@ export function CompaniesPage() {
                 <Download size={14} />
                 Экспорт
               </button>
-            <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => { setEditCompany(null); setFormOpen(true) }}>
-              <Plus size={14} />
-              Новая компания
-            </button>
+              <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => { setEditCompany(null); setFormOpen(true) }}>
+                <Plus size={14} />
+                Новая компания
+              </button>
             </>
           }
         />
@@ -233,7 +266,14 @@ export function CompaniesPage() {
                 </thead>
                 <tbody>
                   {filtered.map((c) => (
-                    <CompanyRow key={c.id} company={c} onDelete={(id) => deleteMutation.mutate(id)} />
+                    <CompanyRow
+                      key={c.id}
+                      company={c}
+                      active={selectedCompany?.id === c.id}
+                      onClick={() => setSelectedCompany(c)}
+                      onStatusChange={handleStatusChange}
+                      statusUpdating={updateStatusMutation.isPending}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -241,11 +281,32 @@ export function CompaniesPage() {
           )}
         </div>
       </div>
+
+      <CompanyDetailPanel
+        company={selectedCompany}
+        open={selectedCompany !== null}
+        onClose={() => setSelectedCompany(null)}
+        onEdit={openEdit}
+        onUpdated={setSelectedCompany}
+        onDeleted={() => setSelectedCompany(null)}
+        onCommChannel={setCommChannel}
+      />
+
       <CompanyForm
         open={formOpen}
         onClose={() => { setFormOpen(false); setEditCompany(null) }}
         existing={editCompany}
       />
+
+      {selectedCompany && (
+        <LogCommunicationModal
+          open={commChannel !== null}
+          channel={commChannel ?? 'email'}
+          defaultCompanyId={selectedCompany.id}
+          defaultCompanyName={selectedCompany.name}
+          onClose={() => setCommChannel(null)}
+        />
+      )}
     </AppLayout>
   )
 }

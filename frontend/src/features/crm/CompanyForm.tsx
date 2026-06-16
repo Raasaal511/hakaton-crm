@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { FormModal, formStyles as s } from 'shared/ui/FormModal/FormModal'
 import { crmAPI, type CrmCompany } from 'shared/api/requests/crm'
 import { qk } from 'shared/api/queryKeys'
 import { organizationModel } from 'entities/organization'
+import { COMPANY_STATUS_OPTIONS } from 'shared/lib/companyStatus'
 
 type Props = {
   open: boolean
@@ -32,11 +33,6 @@ const EMPTY: FormData = {
   status: 'active', notes: '',
 }
 
-const STATUS_OPTIONS = [
-  { value: 'active', label: 'Активная' },
-  { value: 'inactive', label: 'Неактивная' },
-  { value: 'prospect', label: 'Перспективная' },
-]
 
 const INDUSTRY_OPTIONS = [
   '', 'IT и технологии', 'Промышленность', 'Финансы', 'Строительство',
@@ -66,6 +62,28 @@ export function CompanyForm({ open, onClose, existing }: Props) {
       : EMPTY,
   )
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
+
+  useEffect(() => {
+    if (!open) return
+    setForm(
+      existing
+        ? {
+            name: existing.name ?? '',
+            industry: existing.industry ?? '',
+            website: existing.website ?? '',
+            email: existing.email ?? '',
+            phone: existing.phone ?? '',
+            city: existing.city ?? '',
+            address: existing.address ?? '',
+            employeesCount: existing.employeesCount != null ? String(existing.employeesCount) : '',
+            annualRevenue: existing.annualRevenue != null ? String(existing.annualRevenue) : '',
+            status: existing.status ?? 'active',
+            notes: existing.notes ?? '',
+          }
+        : EMPTY,
+    )
+    setErrors({})
+  }, [open, existing?.id])
 
   const createMutation = useMutation({
     mutationFn: (data: FormData) =>
@@ -169,7 +187,7 @@ export function CompanyForm({ open, onClose, existing }: Props) {
           <div className={s.field}>
             <label className={s.label}>Статус</label>
             <select className={s.select} value={form.status} onChange={(e) => set('status', e.target.value)}>
-              {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {COMPANY_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
         </div>

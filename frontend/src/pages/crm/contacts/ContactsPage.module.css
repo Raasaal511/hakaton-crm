@@ -28,6 +28,26 @@
   color: var(--color-text-tertiary);
 }
 
+.filterSelect {
+  padding: 0.3rem 0.625rem;
+  font-size: var(--text-sm);
+  font-family: var(--font);
+  color: var(--color-text);
+  background: var(--color-page-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  min-width: 160px;
+  cursor: pointer;
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.filterSelect:focus {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-focus);
+  background: var(--color-bg);
+}
+
 /* ── Table container ── */
 .tableWrap {
   flex: 1;
@@ -93,14 +113,49 @@
   flex-shrink: 0;
 }
 
-/* ── Status pill ── */
-.statusPill {
-  display: inline-block;
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius-full);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  white-space: nowrap;
+.sourceCell {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── Row actions ── */
+.rowActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  opacity: 0.35;
+  transition: opacity var(--duration-fast);
+}
+
+:global(tr:hover) .rowActions,
+.activeRow .rowActions {
+  opacity: 1;
+}
+
+.rowActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.rowActionBtn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+}
+
+.rowActionDanger:hover {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
 }
 
 /* ── Contact links ── */
@@ -157,109 +212,30 @@
   margin: 0 0 0.5rem;
 }
 
-/* ── Context panel ── */
-.panelContent {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.panelAvatar {
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-lg);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--text-2xl);
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-}
-
-.panelName {
-  font-size: var(--text-xl);
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0;
-  text-align: center;
-  letter-spacing: -0.015em;
-}
-
-.panelPos {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  margin: 0;
-  text-align: center;
-}
-
-.panelFields {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.panelField {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.5rem 0.625rem;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius);
-  border: 1px solid var(--color-border);
-}
-
-.panelFieldIcon {
-  color: var(--color-text-secondary);
-  flex-shrink: 0;
-}
-
-.panelFieldValue {
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  text-decoration: none;
-  transition: color var(--duration-fast);
-}
-
-a.panelFieldValue:hover {
-  color: var(--color-accent);
-}
-
-.panelStatus {
-  display: flex;
-  justify-content: center;
-  margin-top: 0.25rem;
-}
-
-.panelActions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-  margin-top: 0.25rem;
-}
-
-.panelSection {
-  width: 100%;
+/* ── Pagination ── */
+.paginationWrap {
+  padding: 0 1.5rem 1.25rem;
   border-top: 1px solid var(--color-border);
-  padding-top: 0.875rem;
-  margin-top: 0.25rem;
 }
 
-.panelSectionTitle {
-  font-size: var(--text-xs);
-  font-weight: 700;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin: 0 0 0.375rem;
+/* ── Banners ── */
+.errorBanner {
+  margin: 0 1.5rem;
+  padding: 0.625rem 0.875rem;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
+  border-radius: var(--radius);
 }
 
-.panelMeta {
+.noOrgHint {
+  margin: 2rem 1.5rem;
+  padding: 1.25rem;
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
-  margin: 0;
+  background: var(--color-bg-secondary);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+  text-align: center;
 }

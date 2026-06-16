@@ -15,6 +15,7 @@ import {
   salesInvoicesSchema,
   crmActivitySchema,
   crmSegmentsSchema,
+  usersSchema,
   CrmContact,
   CrmCompany,
   CrmLead,
@@ -27,7 +28,7 @@ import {
   SalesQuote,
   SalesInvoice,
 } from '../../infra/database/drizzle/schema.js'
-import { eq, and, isNull, ilike, desc, count, sql, or } from 'drizzle-orm'
+import { eq, and, isNull, ilike, desc, count, sql, or, gte, lte } from 'drizzle-orm'
 import type {
   CreateContactDTO,
   UpdateContactDTO,
@@ -39,6 +40,7 @@ import type {
   CrmListFilter,
   LeadListFilter,
   CreateSegmentDTO,
+  CrmReports,
 } from './crm.types.js'
 
 @injectable()
@@ -82,7 +84,7 @@ export class CrmRepository {
   // Contacts
   // ---------------------------------------------------------------------------
 
-  async findAllContacts(orgId: number, filter: CrmListFilter = {}) {
+  private contactFilterConditions(orgId: number, filter: CrmListFilter = {}) {
     const conditions = [
       eq(crmContactsSchema.organizationId, orgId),
       isNull(crmContactsSchema.deletedAt),
@@ -112,6 +114,11 @@ export class CrmRepository {
       conditions.push(eq(crmContactsSchema.companyId, filter.companyId))
     }
 
+    return conditions
+  }
+
+  async findAllContacts(orgId: number, filter: CrmListFilter = {}) {
+    const conditions = this.contactFilterConditions(orgId, filter)
     const limit = filter.limit ?? 50
     const offset = filter.offset ?? 0
 
@@ -201,11 +208,12 @@ export class CrmRepository {
     return rows.length > 0
   }
 
-  async countContacts(orgId: number): Promise<number> {
+  async countContacts(orgId: number, filter: CrmListFilter = {}): Promise<number> {
+    const conditions = this.contactFilterConditions(orgId, filter)
     const rows = await this.db
       .select({ n: count() })
       .from(crmContactsSchema)
-      .where(and(eq(crmContactsSchema.organizationId, orgId), isNull(crmContactsSchema.deletedAt)))
+      .where(and(...conditions))
     return Number(rows[0]?.n ?? 0)
   }
 
@@ -613,6 +621,87 @@ export class CrmRepository {
     return row!
   }
 
+  async findDealStageById(orgId: number, id: number): Promise<CrmDealStage | null> {
+    const rows = await this.db
+      .select()
+      .from(crmDealStagesSchema)
+      .where(and(eq(crmDealStagesSchema.id, id), eq(crmDealStagesSchema.organizationId, orgId)))
+    return rows[0] ?? null
+  }
+
+  async updateDealStage(orgId: number, id: number, dto: {
+    name?: string
+    code?: string
+    position?: number
+    probability?: number
+    color?: string | null
+    isWon?: boolean
+    isLost?: boolean
+  }): Promise<CrmDealStage | null> {
+    const patch: Partial<typeof crmDealStagesSchema.$inferInsert> = {}
+    if (dto.name !== undefined) patch.name = dto.name
+    if (dto.code !== undefined) patch.code = dto.code
+    if (dto.position !== undefined) patch.position = dto.position
+    if (dto.probability !== undefined) patch.probability = dto.probability
+    if (dto.color !== undefined) patch.color = dto.color
+    if (dto.isWon !== undefined) patch.isWon = dto.isWon
+    if (dto.isLost !== undefined) patch.isLost = dto.isLost
+
+    const rows = await this.db
+      .update(crmDealStagesSchema)
+      .set(patch)
+      .where(and(eq(crmDealStagesSchema.id, id), eq(crmDealStagesSchema.organizationId, orgId)))
+      .returning()
+    return rows[0] ?? null
+  }
+
+  async reorderDealStages(orgId: number, order: { id: number; position: number }[]): Promise<CrmDealStage[]> {
+    await Promise.all(
+      order.map(({ id, position }) =>
+        this.db
+          .update(crmDealStagesSchema)
+          .set({ position })
+          .where(and(eq(crmDealStagesSchema.id, id), eq(crmDealStagesSchema.organizationId, orgId))),
+      ),
+    )
+    return this.findDealStages(orgId)
+  }
+
+  async countLeadsInStage(orgId: number, stageCode: string): Promise<number> {
+    const [row] = await this.db
+      .select({ value: count() })
+      .from(crmLeadsSchema)
+      .where(
+        and(
+          eq(crmLeadsSchema.organizationId, orgId),
+          eq(crmLeadsSchema.stage, stageCode),
+          isNull(crmLeadsSchema.deletedAt),
+        ),
+      )
+    return Number(row?.value ?? 0)
+  }
+
+  async moveLeadsToStage(orgId: number, fromStageCode: string, toStageCode: string): Promise<void> {
+    await this.db
+      .update(crmLeadsSchema)
+      .set({ stage: toStageCode })
+      .where(
+        and(
+          eq(crmLeadsSchema.organizationId, orgId),
+          eq(crmLeadsSchema.stage, fromStageCode),
+          isNull(crmLeadsSchema.deletedAt),
+        ),
+      )
+  }
+
+  async deleteDealStage(orgId: number, id: number): Promise<boolean> {
+    const rows = await this.db
+      .delete(crmDealStagesSchema)
+      .where(and(eq(crmDealStagesSchema.id, id), eq(crmDealStagesSchema.organizationId, orgId)))
+      .returning({ id: crmDealStagesSchema.id })
+    return rows.length > 0
+  }
+
   async findDeals(orgId: number, filter: LeadListFilter = {}): Promise<CrmDeal[]> {
     const conditions = [
       eq(crmDealsSchema.organizationId, orgId),
@@ -820,6 +909,55 @@ export class CrmRepository {
     return row!
   }
 
+  async findQuoteById(orgId: number, id: number): Promise<SalesQuote | null> {
+    const rows = await this.db
+      .select()
+      .from(salesQuotesSchema)
+      .where(and(eq(salesQuotesSchema.id, id), eq(salesQuotesSchema.organizationId, orgId)))
+      .limit(1)
+    return rows[0] ?? null
+  }
+
+  async updateQuote(orgId: number, id: number, dto: {
+    dealId?: number | null
+    companyId?: number | null
+    contactId?: number | null
+    number?: string
+    status?: string
+    subtotal?: number
+    discount?: number
+    total?: number
+    currency?: string
+    validUntil?: string | null
+  }): Promise<SalesQuote | null> {
+    const patch: Partial<typeof salesQuotesSchema.$inferInsert> = {}
+    if (dto.dealId !== undefined) patch.dealId = dto.dealId
+    if (dto.companyId !== undefined) patch.companyId = dto.companyId
+    if (dto.contactId !== undefined) patch.contactId = dto.contactId
+    if (dto.number !== undefined) patch.number = dto.number
+    if (dto.status !== undefined) patch.status = dto.status
+    if (dto.subtotal !== undefined) patch.subtotal = dto.subtotal
+    if (dto.discount !== undefined) patch.discount = dto.discount
+    if (dto.total !== undefined) patch.total = dto.total
+    if (dto.currency !== undefined) patch.currency = dto.currency
+    if (dto.validUntil !== undefined) patch.validUntil = dto.validUntil ? new Date(dto.validUntil) : null
+
+    const rows = await this.db
+      .update(salesQuotesSchema)
+      .set(patch)
+      .where(and(eq(salesQuotesSchema.id, id), eq(salesQuotesSchema.organizationId, orgId)))
+      .returning()
+    return rows[0] ?? null
+  }
+
+  async deleteQuote(orgId: number, id: number): Promise<boolean> {
+    const rows = await this.db
+      .delete(salesQuotesSchema)
+      .where(and(eq(salesQuotesSchema.id, id), eq(salesQuotesSchema.organizationId, orgId)))
+      .returning({ id: salesQuotesSchema.id })
+    return rows.length > 0
+  }
+
   async listInvoices(orgId: number): Promise<SalesInvoice[]> {
     return this.db
       .select()
@@ -854,6 +992,55 @@ export class CrmRepository {
       dueAt: dto.dueAt ? new Date(dto.dueAt) : null,
     }).returning()
     return row!
+  }
+
+  async findInvoiceById(orgId: number, id: number): Promise<SalesInvoice | null> {
+    const rows = await this.db
+      .select()
+      .from(salesInvoicesSchema)
+      .where(and(eq(salesInvoicesSchema.id, id), eq(salesInvoicesSchema.organizationId, orgId)))
+      .limit(1)
+    return rows[0] ?? null
+  }
+
+  async updateInvoice(orgId: number, id: number, dto: {
+    dealId?: number | null
+    quoteId?: number | null
+    number?: string
+    status?: string
+    total?: number
+    paidAmount?: number
+    currency?: string
+    issuedAt?: string | null
+    dueAt?: string | null
+    paidAt?: string | null
+  }): Promise<SalesInvoice | null> {
+    const patch: Partial<typeof salesInvoicesSchema.$inferInsert> = {}
+    if (dto.dealId !== undefined) patch.dealId = dto.dealId
+    if (dto.quoteId !== undefined) patch.quoteId = dto.quoteId
+    if (dto.number !== undefined) patch.number = dto.number
+    if (dto.status !== undefined) patch.status = dto.status
+    if (dto.total !== undefined) patch.total = dto.total
+    if (dto.paidAmount !== undefined) patch.paidAmount = dto.paidAmount
+    if (dto.currency !== undefined) patch.currency = dto.currency
+    if (dto.issuedAt !== undefined) patch.issuedAt = dto.issuedAt ? new Date(dto.issuedAt) : null
+    if (dto.dueAt !== undefined) patch.dueAt = dto.dueAt ? new Date(dto.dueAt) : null
+    if (dto.paidAt !== undefined) patch.paidAt = dto.paidAt ? new Date(dto.paidAt) : null
+
+    const rows = await this.db
+      .update(salesInvoicesSchema)
+      .set(patch)
+      .where(and(eq(salesInvoicesSchema.id, id), eq(salesInvoicesSchema.organizationId, orgId)))
+      .returning()
+    return rows[0] ?? null
+  }
+
+  async deleteInvoice(orgId: number, id: number): Promise<boolean> {
+    const rows = await this.db
+      .delete(salesInvoicesSchema)
+      .where(and(eq(salesInvoicesSchema.id, id), eq(salesInvoicesSchema.organizationId, orgId)))
+      .returning({ id: salesInvoicesSchema.id })
+    return rows.length > 0
   }
 
   // ---------------------------------------------------------------------------
@@ -937,5 +1124,330 @@ export class CrmRepository {
     return [...actItems, ...commItems]
       .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
       .slice(0, limit)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Reports
+  // ---------------------------------------------------------------------------
+
+  async getCrmReports(orgId: number, from: Date | null, to: Date, trendFrom: Date): Promise<CrmReports> {
+    const leadBase = and(
+      eq(crmLeadsSchema.organizationId, orgId),
+      isNull(crmLeadsSchema.deletedAt),
+    )
+
+    const inPeriod = (col: { getSQLType(): unknown }) => {
+      const conds = [lte(col as typeof crmLeadsSchema.createdAt, to)]
+      if (from) conds.unshift(gte(col as typeof crmLeadsSchema.createdAt, from))
+      return and(...conds)
+    }
+
+    const inTrend = (col: typeof crmLeadsSchema.createdAt) =>
+      and(gte(col, trendFrom), lte(col, to))
+
+    const [
+      dealStages,
+      leadByStageRows,
+      overviewRow,
+      newLeadsRow,
+      contactCountRow,
+      companyCountRow,
+      newContactsRow,
+      newCompaniesRow,
+      contactsStatusRows,
+      companiesStatusRows,
+      leadsTrendRows,
+      revenueTrendRows,
+      managerRows,
+      sourceRows,
+      quotesRow,
+      invoicesRow,
+      commRows,
+    ] = await Promise.all([
+      this.findDealStages(orgId),
+
+      this.db
+        .select({
+          stage: crmLeadsSchema.stage,
+          cnt: count(),
+          total: sql<number>`coalesce(sum(${crmLeadsSchema.amount}), 0)::int`,
+        })
+        .from(crmLeadsSchema)
+        .where(leadBase)
+        .groupBy(crmLeadsSchema.stage),
+
+      this.db
+        .select({
+          totalLeads: count(),
+          totalAmount: sql<number>`coalesce(sum(${crmLeadsSchema.amount}), 0)::int`,
+          weightedPipeline: sql<number>`coalesce(sum((${crmLeadsSchema.amount} * ${crmLeadsSchema.probability}) / 100), 0)::int`,
+        })
+        .from(crmLeadsSchema)
+        .where(leadBase),
+
+      this.db
+        .select({ n: count() })
+        .from(crmLeadsSchema)
+        .where(and(leadBase, inPeriod(crmLeadsSchema.createdAt))),
+
+      this.db
+        .select({ n: count() })
+        .from(crmContactsSchema)
+        .where(and(eq(crmContactsSchema.organizationId, orgId), isNull(crmContactsSchema.deletedAt))),
+
+      this.db
+        .select({ n: count() })
+        .from(crmCompaniesSchema)
+        .where(and(eq(crmCompaniesSchema.organizationId, orgId), isNull(crmCompaniesSchema.deletedAt))),
+
+      this.db
+        .select({ n: count() })
+        .from(crmContactsSchema)
+        .where(and(
+          eq(crmContactsSchema.organizationId, orgId),
+          isNull(crmContactsSchema.deletedAt),
+          inPeriod(crmContactsSchema.createdAt),
+        )),
+
+      this.db
+        .select({ n: count() })
+        .from(crmCompaniesSchema)
+        .where(and(
+          eq(crmCompaniesSchema.organizationId, orgId),
+          isNull(crmCompaniesSchema.deletedAt),
+          inPeriod(crmCompaniesSchema.createdAt),
+        )),
+
+      this.db
+        .select({ status: crmContactsSchema.status, cnt: count() })
+        .from(crmContactsSchema)
+        .where(and(eq(crmContactsSchema.organizationId, orgId), isNull(crmContactsSchema.deletedAt)))
+        .groupBy(crmContactsSchema.status),
+
+      this.db
+        .select({ status: crmCompaniesSchema.status, cnt: count() })
+        .from(crmCompaniesSchema)
+        .where(and(eq(crmCompaniesSchema.organizationId, orgId), isNull(crmCompaniesSchema.deletedAt)))
+        .groupBy(crmCompaniesSchema.status),
+
+      this.db
+        .select({
+          date: sql<string>`date_trunc('day', ${crmLeadsSchema.createdAt})::date`,
+          cnt: count(),
+          total: sql<number>`coalesce(sum(${crmLeadsSchema.amount}), 0)::int`,
+        })
+        .from(crmLeadsSchema)
+        .where(and(leadBase, inTrend(crmLeadsSchema.createdAt)))
+        .groupBy(sql`date_trunc('day', ${crmLeadsSchema.createdAt})::date`)
+        .orderBy(sql`date_trunc('day', ${crmLeadsSchema.createdAt})::date`),
+
+      this.db
+        .select({
+          date: sql<string>`date_trunc('day', coalesce(${crmLeadsSchema.closedAt}, ${crmLeadsSchema.updatedAt}))::date`,
+          total: sql<number>`coalesce(sum(${crmLeadsSchema.amount}), 0)::int`,
+        })
+        .from(crmLeadsSchema)
+        .innerJoin(
+          crmDealStagesSchema,
+          and(
+            eq(crmDealStagesSchema.organizationId, orgId),
+            eq(crmDealStagesSchema.code, crmLeadsSchema.stage),
+            eq(crmDealStagesSchema.isWon, true),
+          ),
+        )
+        .where(and(
+          leadBase,
+          gte(sql`coalesce(${crmLeadsSchema.closedAt}, ${crmLeadsSchema.updatedAt})`, trendFrom),
+          lte(sql`coalesce(${crmLeadsSchema.closedAt}, ${crmLeadsSchema.updatedAt})`, to),
+        ))
+        .groupBy(sql`date_trunc('day', coalesce(${crmLeadsSchema.closedAt}, ${crmLeadsSchema.updatedAt}))::date`)
+        .orderBy(sql`date_trunc('day', coalesce(${crmLeadsSchema.closedAt}, ${crmLeadsSchema.updatedAt}))::date`),
+
+      this.db
+        .select({
+          userId: crmLeadsSchema.responsibleUserId,
+          firstname: usersSchema.firstname,
+          lastname: usersSchema.lastname,
+          leadsCount: count(),
+          wonCount: sql<number>`coalesce(sum(case when ${crmDealStagesSchema.isWon} then 1 else 0 end), 0)::int`,
+          totalAmount: sql<number>`coalesce(sum(${crmLeadsSchema.amount}), 0)::int`,
+          wonAmount: sql<number>`coalesce(sum(case when ${crmDealStagesSchema.isWon} then ${crmLeadsSchema.amount} else 0 end), 0)::int`,
+        })
+        .from(crmLeadsSchema)
+        .leftJoin(usersSchema, eq(usersSchema.id, crmLeadsSchema.responsibleUserId))
+        .leftJoin(
+          crmDealStagesSchema,
+          and(
+            eq(crmDealStagesSchema.organizationId, orgId),
+            eq(crmDealStagesSchema.code, crmLeadsSchema.stage),
+          ),
+        )
+        .where(leadBase)
+        .groupBy(crmLeadsSchema.responsibleUserId, usersSchema.firstname, usersSchema.lastname),
+
+      this.db
+        .select({
+          source: sql<string>`coalesce(${crmLeadsSchema.source}, 'Не указан')`,
+          cnt: count(),
+          total: sql<number>`coalesce(sum(${crmLeadsSchema.amount}), 0)::int`,
+        })
+        .from(crmLeadsSchema)
+        .where(leadBase)
+        .groupBy(sql`coalesce(${crmLeadsSchema.source}, 'Не указан')`),
+
+      this.db
+        .select({
+          cnt: count(),
+          total: sql<number>`coalesce(sum(${salesQuotesSchema.total}), 0)::int`,
+        })
+        .from(salesQuotesSchema)
+        .where(and(
+          eq(salesQuotesSchema.organizationId, orgId),
+          inPeriod(salesQuotesSchema.createdAt),
+        )),
+
+      this.db
+        .select({
+          cnt: count(),
+          paid: sql<number>`coalesce(sum(${salesInvoicesSchema.paidAmount}), 0)::int`,
+          outstanding: sql<number>`coalesce(sum(${salesInvoicesSchema.total} - ${salesInvoicesSchema.paidAmount}), 0)::int`,
+        })
+        .from(salesInvoicesSchema)
+        .where(and(
+          eq(salesInvoicesSchema.organizationId, orgId),
+          inPeriod(salesInvoicesSchema.createdAt),
+        )),
+
+      this.db
+        .select({
+          channel: crmCommunicationsSchema.channel,
+          cnt: count(),
+        })
+        .from(crmCommunicationsSchema)
+        .where(and(
+          eq(crmCommunicationsSchema.organizationId, orgId),
+          inPeriod(crmCommunicationsSchema.createdAt),
+        ))
+        .groupBy(crmCommunicationsSchema.channel),
+    ])
+
+    const stageMap = new Map(leadByStageRows.map((r) => [r.stage, { count: Number(r.cnt), amount: Number(r.total) }]))
+    const wonStages = new Set(dealStages.filter((s) => s.isWon).map((s) => s.code))
+    const lostStages = new Set(dealStages.filter((s) => s.isLost).map((s) => s.code))
+
+    let wonCount = 0
+    let lostCount = 0
+    let wonAmount = 0
+    for (const [stage, data] of stageMap) {
+      if (wonStages.has(stage)) { wonCount += data.count; wonAmount += data.amount }
+      if (lostStages.has(stage)) lostCount += data.count
+    }
+
+    const closed = wonCount + lostCount
+    const conversionRate = closed > 0 ? Math.round((wonCount / closed) * 1000) / 1000 : 0
+
+    const funnelStages = dealStages.length > 0
+      ? dealStages
+      : [...stageMap.keys()].map((code, i) => ({
+          code,
+          name: code,
+          color: '#6366f1',
+          position: i + 1,
+          isWon: code === 'won',
+          isLost: code === 'lost',
+        } as CrmDealStage))
+
+    let prevCount: number | null = null
+    const funnel = funnelStages.map((stage) => {
+      const data = stageMap.get(stage.code) ?? { count: 0, amount: 0 }
+      const conversionFromPrev =
+        prevCount != null && prevCount > 0
+          ? Math.round((data.count / prevCount) * 1000) / 1000
+          : null
+      if (!stage.isWon && !stage.isLost) prevCount = data.count
+      return {
+        stage: stage.code,
+        stageName: stage.name,
+        color: stage.color,
+        position: stage.position,
+        count: data.count,
+        amount: data.amount,
+        conversionFromPrev,
+      }
+    })
+
+    const formatDate = (d: unknown) => {
+      if (d instanceof Date) return d.toISOString().slice(0, 10)
+      return String(d).slice(0, 10)
+    }
+
+    return {
+      overview: {
+        totalLeads: Number(overviewRow[0]?.totalLeads ?? 0),
+        totalAmount: Number(overviewRow[0]?.totalAmount ?? 0),
+        wonAmount,
+        wonCount,
+        lostCount,
+        conversionRate,
+        weightedPipeline: Number(overviewRow[0]?.weightedPipeline ?? 0),
+        contactCount: Number(contactCountRow[0]?.n ?? 0),
+        companyCount: Number(companyCountRow[0]?.n ?? 0),
+        newLeads: Number(newLeadsRow[0]?.n ?? 0),
+        newContacts: Number(newContactsRow[0]?.n ?? 0),
+        newCompanies: Number(newCompaniesRow[0]?.n ?? 0),
+      },
+      funnel,
+      trends: {
+        leadsCreated: leadsTrendRows.map((r) => ({
+          date: formatDate(r.date),
+          count: Number(r.cnt),
+          amount: Number(r.total),
+        })),
+        revenueWon: revenueTrendRows.map((r) => ({
+          date: formatDate(r.date),
+          amount: Number(r.total),
+        })),
+      },
+      byManager: managerRows
+        .map((r) => {
+          const lc = Number(r.leadsCount)
+          const wc = Number(r.wonCount)
+          return {
+            userId: r.userId,
+            firstname: r.firstname ?? 'Без',
+            lastname: r.lastname ?? (r.userId == null ? 'ответственного' : null),
+            leadsCount: lc,
+            wonCount: wc,
+            totalAmount: Number(r.totalAmount),
+            wonAmount: Number(r.wonAmount),
+            conversionRate: lc > 0 ? Math.round((wc / lc) * 1000) / 1000 : 0,
+          }
+        })
+        .sort((a, b) => b.wonAmount - a.wonAmount),
+      bySource: sourceRows.map((r) => ({
+        source: String(r.source),
+        count: Number(r.cnt),
+        amount: Number(r.total),
+      })),
+      contactsByStatus: contactsStatusRows.map((r) => ({
+        status: r.status,
+        count: Number(r.cnt),
+      })),
+      companiesByStatus: companiesStatusRows.map((r) => ({
+        status: r.status,
+        count: Number(r.cnt),
+      })),
+      sales: {
+        quotesCount: Number(quotesRow[0]?.cnt ?? 0),
+        quotesAmount: Number(quotesRow[0]?.total ?? 0),
+        invoicesCount: Number(invoicesRow[0]?.cnt ?? 0),
+        invoicesPaid: Number(invoicesRow[0]?.paid ?? 0),
+        invoicesOutstanding: Number(invoicesRow[0]?.outstanding ?? 0),
+      },
+      communicationsByChannel: commRows.map((r) => ({
+        channel: r.channel,
+        count: Number(r.cnt),
+      })),
+    }
   }
 }

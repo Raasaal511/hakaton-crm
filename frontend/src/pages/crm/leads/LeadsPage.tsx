@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Plus,
@@ -7,7 +7,6 @@ import {
   Target,
   CircleDollarSign,
   Trash2,
-  ArrowRight,
   TrendingUp,
   Sparkles,
   Loader2,
@@ -19,8 +18,9 @@ import { DataTable, type ColumnDef } from 'shared/ui/DataTable/DataTable'
 import { organizationModel } from 'entities/organization'
 import { crmAPI, type CrmLead } from 'shared/api/requests/crm'
 import { qk } from 'shared/api/queryKeys'
-import { LEAD_STAGE_LABELS, LEAD_STAGE_COLORS, PRIORITY_COLORS, formatRubles } from 'shared/lib/crmDemoData'
+import { LEAD_STAGE_COLORS, PRIORITY_COLORS, formatRubles } from 'shared/lib/crmDemoData'
 import { LeadForm } from 'features/crm/LeadForm'
+import { LeadsKanbanBoard } from 'features/crm/leads/LeadsKanbanBoard'
 import { useLeadScore } from 'features/realtime/useLeadScore'
 import styles from './LeadsPage.module.css'
 
@@ -32,27 +32,13 @@ function scoreColor(score: number): string {
 
 function AiScoreBadge({ lead }: { lead: CrmLead }) {
   const { data, isLoading } = useLeadScore(lead)
-  const [displayed, setDisplayed] = useState(0)
   const score = data?.score ?? 0
   const color = scoreColor(score)
-  const isDeepSeek = data?.source === 'deepseek'
-
-  useEffect(() => {
-    if (!score) return
-    let start = 0
-    const step = Math.ceil(score / 20)
-    const timer = setInterval(() => {
-      start += step
-      if (start >= score) { setDisplayed(score); clearInterval(timer) }
-      else setDisplayed(start)
-    }, 30)
-    return () => clearInterval(timer)
-  }, [score])
 
   if (isLoading) {
     return (
       <span className={styles.aiScoreBadge} style={{ color: '#6b7280', background: 'var(--color-bg-secondary)', borderColor: 'var(--color-border)' }}>
-        <Loader2 size={9} style={{ animation: 'spin 1s linear infinite' }} />
+        <Loader2 size={9} className={styles.spin} />
         AI
       </span>
     )
@@ -62,16 +48,13 @@ function AiScoreBadge({ lead }: { lead: CrmLead }) {
     <span
       className={styles.aiScoreBadge}
       style={{ color, background: `color-mix(in srgb, ${color} 12%, var(--color-bg))`, borderColor: `color-mix(in srgb, ${color} 25%, transparent)` }}
-      title={`AI Score: ${score}${isDeepSeek ? ' (DeepSeek)' : ' (local)'}\n${data?.summary ?? ''}`}
+      title={`AI Score: ${score}\n${data?.summary ?? ''}`}
     >
       <Sparkles size={9} />
-      {displayed}
+      {score}
     </span>
   )
 }
-
-type LeadStage = 'new' | 'qualification' | 'proposal' | 'negotiation' | 'won' | 'lost'
-const STAGES: LeadStage[] = ['new', 'qualification', 'proposal', 'negotiation', 'won', 'lost']
 
 const PRIORITY_LABELS: Record<string, string> = {
   high: 'Высокий',
@@ -79,74 +62,70 @@ const PRIORITY_LABELS: Record<string, string> = {
   low: 'Низкий',
 }
 
-function KanbanCard({ lead }: { lead: CrmLead }) {
-  const stageColor = LEAD_STAGE_COLORS[lead.stage as keyof typeof LEAD_STAGE_COLORS] ?? '#6b7280'
-  const priorityColor = PRIORITY_COLORS[lead.priority as keyof typeof PRIORITY_COLORS] ?? '#6b7280'
-  return (
-    <div className={styles.kanbanCard}>
-      <div className={styles.kanbanCardTop}>
-        <span className={styles.kanbanCardTitle}>{lead.title}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <AiScoreBadge lead={lead} />
-          <span
-            className={styles.priorityDot}
-            style={{ background: priorityColor }}
-            title={`Приоритет: ${lead.priority}`}
-          />
-        </div>
-      </div>
-      {lead.source && (
-        <div className={styles.kanbanCardSource}>
-          <Target size={10} />
-          {lead.source}
-        </div>
-      )}
-      <div className={styles.kanbanCardFooter}>
-        <span className={styles.kanbanCardAmount}>{formatRubles(lead.amount)}</span>
-        <span className={styles.probBadge} style={{ color: stageColor, background: `color-mix(in srgb, ${stageColor} 12%, var(--color-bg))` }}>
-          {lead.probability}%
-        </span>
-      </div>
-    </div>
-  )
-}
-
 export function LeadsPage() {
   const [search, setSearch] = useState('')
   const [view, setView] = useState<'kanban' | 'table'>('kanban')
-  const [stageFilter, setStageFilter] = useState<LeadStage | 'all'>('all')
+  const [stageFilter, setStageFilter] = useState<string>('all')
   const [formOpen, setFormOpen] = useState(false)
   const [editLead, setEditLead] = useState<CrmLead | null>(null)
+  const [defaultStage, setDefaultStage] = useState<string | undefined>()
   const org = organizationModel.selectors.useCurrentOrganization()
+  const orgId = org?.id ?? 0
   const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
-    queryKey: qk.crmLeads(org?.id ?? 0, { limit: 500 }),
-    queryFn: () => crmAPI.getLeads(org!.id, { limit: 500 }),
-    enabled: Boolean(org?.id),
+    queryKey: qk.crmLeads(orgId, { limit: 500 }),
+    queryFn: () => crmAPI.getLeads(orgId, { limit: 500 }),
+    enabled: Boolean(orgId),
     staleTime: 30_000,
   })
 
   const { data: dealStats } = useQuery({
-    queryKey: qk.crmDealStats(org?.id ?? 0),
-    queryFn: () => crmAPI.getDealStats(org!.id),
-    enabled: Boolean(org?.id),
+    queryKey: qk.crmDealStats(orgId),
+    queryFn: () => crmAPI.getDealStats(orgId),
+    enabled: Boolean(orgId),
     staleTime: 30_000,
   })
 
   const { data: dealStages = [] } = useQuery({
-    queryKey: qk.crmDealStages(org?.id ?? 0),
-    queryFn: () => crmAPI.getDealStages(org!.id),
-    enabled: Boolean(org?.id),
+    queryKey: qk.crmDealStages(orgId),
+    queryFn: () => crmAPI.getDealStages(orgId),
+    enabled: Boolean(orgId),
+    staleTime: 60_000,
+  })
+
+  const { data: companiesData } = useQuery({
+    queryKey: qk.crmCompanies(orgId, { limit: 200 }),
+    queryFn: () => crmAPI.getCompanies(orgId, { limit: 200 }),
+    enabled: Boolean(orgId),
+    staleTime: 60_000,
+  })
+
+  const { data: contactsData } = useQuery({
+    queryKey: qk.crmContacts(orgId, { limit: 200 }),
+    queryFn: () => crmAPI.getContacts(orgId, { limit: 200 }),
+    enabled: Boolean(orgId),
     staleTime: 60_000,
   })
 
   const { data: leadSources = [] } = useQuery({
-    queryKey: qk.crmLeadSources(org?.id ?? 0),
-    queryFn: () => crmAPI.getLeadSources(org!.id),
-    enabled: Boolean(org?.id),
+    queryKey: qk.crmLeadSources(orgId),
+    queryFn: () => crmAPI.getLeadSources(orgId),
+    enabled: Boolean(orgId),
     staleTime: 60_000,
   })
+
+  const stageLabelMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const s of dealStages) map.set(s.code, s.name)
+    return map
+  }, [dealStages])
+
+  const stageColorMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const s of dealStages) map.set(s.code, s.color ?? '#6366f1')
+    return map
+  }, [dealStages])
 
   const leads = useMemo(() => data?.items ?? [], [data])
 
@@ -158,13 +137,8 @@ export function LeadsPage() {
     }), [leads, search, stageFilter])
 
   const byStage = useMemo(() => {
-    const map: Record<LeadStage, CrmLead[]> = {
-      new: [], qualification: [], proposal: [], negotiation: [], won: [], lost: [],
-    }
-    filtered.forEach((l) => {
-      const stage = l.stage as LeadStage
-      if (map[stage]) map[stage].push(l)
-    })
+    const map = new Map<string, number>()
+    for (const l of filtered) map.set(l.stage, (map.get(l.stage) ?? 0) + 1)
     return map
   }, [filtered])
 
@@ -174,39 +148,42 @@ export function LeadsPage() {
     filtered.map((l) => ({ ...l, id: String(l.id) })),
     [filtered])
 
+  function openCreate(stageCode?: string) {
+    setEditLead(null)
+    setDefaultStage(stageCode)
+    setFormOpen(true)
+  }
+
+  function openEdit(lead: CrmLead) {
+    setEditLead(lead)
+    setDefaultStage(undefined)
+    setFormOpen(true)
+  }
+
   const tableColumns: ColumnDef<(typeof tableData)[0]>[] = [
     {
       key: 'title',
       header: 'Сделка',
-      sortable: true,
       renderCell: (row) => (
         <div>
           <div className={styles.dealTitle}>{row.title}</div>
-          {row.description && (
-            <div className={styles.dealDesc}>{row.description.slice(0, 60)}</div>
-          )}
+          {row.description && <div className={styles.dealDesc}>{row.description.slice(0, 60)}</div>}
         </div>
       ),
     },
     {
       key: 'amount',
       header: 'Сумма',
-      sortable: true,
-      renderCell: (row) => (
-        <span className={styles.amountCell}>{formatRubles(row.amount)}</span>
-      ),
+      renderCell: (row) => <span className={styles.amountCell}>{formatRubles(row.amount)}</span>,
     },
     {
       key: 'stage',
       header: 'Этап',
       renderCell: (row) => {
-        const color = LEAD_STAGE_COLORS[row.stage as keyof typeof LEAD_STAGE_COLORS] ?? '#6b7280'
-        const label = LEAD_STAGE_LABELS[row.stage as keyof typeof LEAD_STAGE_LABELS] ?? row.stage
+        const color = stageColorMap.get(row.stage) ?? LEAD_STAGE_COLORS[row.stage as keyof typeof LEAD_STAGE_COLORS] ?? '#6b7280'
+        const label = stageLabelMap.get(row.stage) ?? row.stage
         return (
-          <span
-            className={styles.stagePill}
-            style={{ color, background: `color-mix(in srgb, ${color} 12%, var(--color-bg))` }}
-          >
+          <span className={styles.stagePill} style={{ color, background: `color-mix(in srgb, ${color} 12%, var(--color-bg))` }}>
             {label}
           </span>
         )
@@ -228,9 +205,8 @@ export function LeadsPage() {
     {
       key: 'probability',
       header: 'Вероятность',
-      sortable: true,
       renderCell: (row) => {
-        const color = LEAD_STAGE_COLORS[row.stage as keyof typeof LEAD_STAGE_COLORS] ?? '#6b7280'
+        const color = stageColorMap.get(row.stage) ?? '#6b7280'
         return (
           <div className={styles.probRow}>
             <div className={styles.probTrack}>
@@ -253,18 +229,31 @@ export function LeadsPage() {
   ]
 
   const activeChips = [
-    ...(stageFilter !== 'all' ? [{ id: 'stage', label: 'Этап', value: LEAD_STAGE_LABELS[stageFilter] ?? stageFilter }] : []),
+    ...(stageFilter !== 'all'
+      ? [{ id: 'stage', label: 'Этап', value: stageLabelMap.get(stageFilter) ?? stageFilter }]
+      : []),
     ...(search ? [{ id: 'search', label: 'Поиск', value: search }] : []),
   ]
 
   const stageTabs = [
     { id: 'all', label: 'Все этапы', count: filtered.length },
-    ...STAGES.map((s) => ({
-      id: s,
-      label: LEAD_STAGE_LABELS[s],
-      count: byStage[s].length,
+    ...dealStages.map((s) => ({
+      id: s.code,
+      label: s.name,
+      count: byStage.get(s.code) ?? 0,
     })),
   ]
+
+  if (!orgId) {
+    return (
+      <AppLayout>
+        <div className={styles.page}>
+          <PageHeader title="Лиды и сделки" breadcrumb={[{ label: 'CRM' }]} />
+          <div className={styles.noOrgHint}>Выберите организацию, чтобы просмотреть лиды.</div>
+        </div>
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout>
@@ -272,7 +261,7 @@ export function LeadsPage() {
         <PageHeader
           title="Лиды и сделки"
           breadcrumb={[{ label: 'CRM' }]}
-          description={`${isLoading ? '...' : (data?.total ?? 0)} лидов · ${formatRubles(dealStats?.weightedPipeline ?? totalAmount)} weighted pipeline · ${dealStages.length || STAGES.length} этапов`}
+          description={`${isLoading ? '...' : (data?.total ?? 0)} лидов · ${formatRubles(dealStats?.weightedPipeline ?? totalAmount)} weighted pipeline · ${dealStages.length} этапов`}
           actions={
             <>
               <div className={styles.viewToggle}>
@@ -293,14 +282,14 @@ export function LeadsPage() {
                   <List size={14} strokeWidth={1.75} />
                 </button>
               </div>
-              <Button variant="primary" size="sm" iconLeft={<Plus size={13} />} onClick={() => { setEditLead(null); setFormOpen(true) }}>
+              <Button variant="primary" size="sm" iconLeft={<Plus size={13} />} onClick={() => openCreate()}>
                 Новый лид
               </Button>
             </>
           }
           tabs={view === 'table' ? stageTabs : undefined}
           activeTab={view === 'table' ? stageFilter : undefined}
-          onTabChange={(id) => setStageFilter(id as LeadStage | 'all')}
+          onTabChange={(id) => setStageFilter(id)}
         />
 
         {view === 'table' && (
@@ -326,7 +315,6 @@ export function LeadsPage() {
 
         {view === 'kanban' ? (
           <div className={styles.kanbanWrap}>
-            {/* Stage totals summary bar */}
             <div className={styles.stageSummary}>
               <div className={styles.summaryTotal}>
                 <CircleDollarSign size={15} strokeWidth={1.75} />
@@ -343,46 +331,26 @@ export function LeadsPage() {
                 <Target size={13} strokeWidth={1.75} />
                 <span>{leadSources.length} источников</span>
               </div>
+              <div className={styles.summarySeparator} />
+              <input
+                type="search"
+                className={styles.searchInput}
+                placeholder="Поиск..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
 
-            <div className={styles.kanban}>
-              {STAGES.map((stage) => {
-                const stageLeads = byStage[stage]
-                const stageColor = LEAD_STAGE_COLORS[stage]
-                const stageSum = stageLeads.reduce((s, l) => s + l.amount, 0)
-                return (
-                  <div key={stage} className={styles.kanbanColumn}>
-                    <div className={styles.columnHeader} style={{ '--col-color': stageColor } as React.CSSProperties}>
-                      <div className={styles.columnTitleRow}>
-                        <span className={styles.columnDot} style={{ background: stageColor }} />
-                        <span className={styles.columnTitle}>{LEAD_STAGE_LABELS[stage]}</span>
-                        <span className={styles.columnCount}>{stageLeads.length}</span>
-                      </div>
-                      {stageSum > 0 && (
-                        <span className={styles.columnSum}>{formatRubles(stageSum)}</span>
-                      )}
-                    </div>
-
-                    <div className={styles.columnCards}>
-                      {stageLeads.map((lead) => (
-                        <KanbanCard key={lead.id} lead={lead} />
-                      ))}
-                      {stageLeads.length === 0 && !isLoading && (
-                        <div className={styles.columnEmpty}>
-                          <ArrowRight size={14} className={styles.columnEmptyIcon} />
-                          Нет лидов
-                        </div>
-                      )}
-                    </div>
-
-                    <button type="button" className={styles.addCardBtn}>
-                      <Plus size={13} />
-                      Добавить
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
+            <LeadsKanbanBoard
+              orgId={orgId}
+              stages={dealStages}
+              leads={filtered}
+              companies={companiesData?.items ?? []}
+              contacts={contactsData?.items ?? []}
+              loading={isLoading}
+              onAddLead={openCreate}
+              onEditLead={openEdit}
+            />
           </div>
         ) : (
           <div className={styles.tableWrap}>
@@ -390,6 +358,10 @@ export function LeadsPage() {
               columns={tableColumns}
               data={tableData}
               loading={isLoading}
+              onRowClick={(row) => {
+                const lead = filtered.find((l) => String(l.id) === row.id)
+                if (lead) openEdit(lead)
+              }}
               bulkActions={[
                 {
                   id: 'delete',
@@ -397,12 +369,12 @@ export function LeadsPage() {
                   icon: <Trash2 size={13} />,
                   variant: 'danger',
                   onClick: (ids) => {
-                Promise.all(ids.map((id) => crmAPI.deleteLead(org!.id, Number(id))))
-                  .then(() => {
-                    queryClient.invalidateQueries({ queryKey: ['crm', org?.id, 'leads'] })
-                    queryClient.invalidateQueries({ queryKey: ['crm', org?.id, 'lead-stats'] })
-                  })
-              },
+                    Promise.all(ids.map((id) => crmAPI.deleteLead(orgId, Number(id))))
+                      .then(() => {
+                        queryClient.invalidateQueries({ queryKey: ['crm', orgId, 'leads'] })
+                        queryClient.invalidateQueries({ queryKey: qk.crmLeadStats(orgId) })
+                      })
+                  },
                 },
               ]}
             />
@@ -412,8 +384,10 @@ export function LeadsPage() {
 
       <LeadForm
         open={formOpen}
-        onClose={() => { setFormOpen(false); setEditLead(null) }}
+        onClose={() => { setFormOpen(false); setEditLead(null); setDefaultStage(undefined) }}
         existing={editLead}
+        defaultStage={defaultStage}
+        stages={dealStages}
       />
     </AppLayout>
   )

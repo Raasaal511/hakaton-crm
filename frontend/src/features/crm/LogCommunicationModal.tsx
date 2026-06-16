@@ -21,27 +21,47 @@ type Props = {
   /** Pre-fill with a specific contact */
   defaultContactId?: number
   defaultContactName?: string
+  /** Pre-fill with a specific company */
+  defaultCompanyId?: number
+  defaultCompanyName?: string
 }
 
-export function LogCommunicationModal({ open, channel, onClose, defaultContactId, defaultContactName }: Props) {
+export function LogCommunicationModal({
+  open,
+  channel,
+  onClose,
+  defaultContactId,
+  defaultContactName,
+  defaultCompanyId,
+  defaultCompanyName,
+}: Props) {
   const org = organizationModel.selectors.useCurrentOrganization()
   const orgId = org?.id ?? 0
   const queryClient = useQueryClient()
 
-  const [targetType, setTargetType] = useState<TargetType>(defaultContactId ? 'contact' : 'contact')
-  const [targetId, setTargetId]   = useState(defaultContactId ? String(defaultContactId) : '')
+  const [targetType, setTargetType] = useState<TargetType>(
+    defaultCompanyId ? 'company' : defaultContactId ? 'contact' : 'contact',
+  )
+  const [targetId, setTargetId] = useState(
+    defaultCompanyId ? String(defaultCompanyId) : defaultContactId ? String(defaultContactId) : '',
+  )
   const [subject, setSubject]     = useState('')
   const [body, setBody]           = useState('')
   const [error, setError]         = useState('')
 
   useEffect(() => {
     if (!open) return
-    setTargetType('contact')
-    setTargetId(defaultContactId ? String(defaultContactId) : '')
+    if (defaultCompanyId) {
+      setTargetType('company')
+      setTargetId(String(defaultCompanyId))
+    } else {
+      setTargetType('contact')
+      setTargetId(defaultContactId ? String(defaultContactId) : '')
+    }
     setSubject(channel === 'phone' ? 'Звонок клиенту' : 'Письмо клиенту')
     setBody('')
     setError('')
-  }, [open, channel, defaultContactId])
+  }, [open, channel, defaultContactId, defaultCompanyId])
 
   const { data: contactsData } = useQuery({
     queryKey: qk.crmContacts(orgId, { limit: 100 }),
@@ -98,7 +118,10 @@ export function LogCommunicationModal({ open, channel, onClose, defaultContactId
     mutation.mutate()
   }
 
-  const isLocked = Boolean(defaultContactId)
+  const isLocked = Boolean(defaultContactId || defaultCompanyId)
+  const lockedLabel = defaultCompanyId
+    ? (defaultCompanyName ?? `Компания #${defaultCompanyId}`)
+    : (defaultContactName ?? `Контакт #${defaultContactId}`)
 
   return (
     <FormModal
@@ -132,7 +155,7 @@ export function LogCommunicationModal({ open, channel, onClose, defaultContactId
           <div className={s.field}>
             <label className={s.label}>Объект <span className={s.required}>*</span></label>
             {isLocked ? (
-              <input className={s.input} value={defaultContactName ?? `Контакт #${defaultContactId}`} disabled />
+              <input className={s.input} value={lockedLabel} disabled />
             ) : (
               <select
                 className={s.select}

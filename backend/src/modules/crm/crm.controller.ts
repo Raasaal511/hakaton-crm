@@ -17,6 +17,7 @@ import type {
   LeadListFilter,
   CreateSegmentDTO,
 } from './crm.types.js'
+import type { CrmReportPeriod } from './crm.types.js'
 
 @injectable()
 export class CrmController {
@@ -111,8 +112,8 @@ export class CrmController {
           offset: req.query.offset ? Number(req.query.offset) : 0,
         }
 
-        const contacts = await this.crmService.getContacts(orgId, filter)
-        return reply.send(contacts)
+        const result = await this.crmService.getContacts(orgId, filter)
+        return reply.send(result)
       },
     )
   }
@@ -483,6 +484,55 @@ export class CrmController {
     )
   }
 
+  updateDealStage: FastifyPluginAsync = async (fastify) => {
+    fastify.put<{
+      Params: { id: string }
+      Querystring: { orgId: string }
+      Body: { name?: string; code?: string; position?: number; probability?: number; color?: string | null; isWon?: boolean; isLost?: boolean }
+    }>(
+      '/crm/deal-stages/:id',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        const id = Number(req.params.id)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
+        return reply.send(await this.crmService.updateDealStage(orgId, id, req.user!.id, req.body))
+      },
+    )
+  }
+
+  reorderDealStages: FastifyPluginAsync = async (fastify) => {
+    fastify.put<{
+      Querystring: { orgId: string }
+      Body: { order: { id: number; position: number }[] }
+    }>(
+      '/crm/deal-stages/reorder',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
+        return reply.send(await this.crmService.reorderDealStages(orgId, req.user!.id, req.body.order ?? []))
+      },
+    )
+  }
+
+  deleteDealStage: FastifyPluginAsync = async (fastify) => {
+    fastify.delete<{ Params: { id: string }; Querystring: { orgId: string } }>(
+      '/crm/deal-stages/:id',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        const id = Number(req.params.id)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.write')
+        await this.crmService.deleteDealStage(orgId, id, req.user!.id)
+        return reply.status(204).send()
+      },
+    )
+  }
+
   getDeals: FastifyPluginAsync = async (fastify) => {
     fastify.get<{ Querystring: { orgId: string; q?: string; companyId?: string; ownerUserId?: string; limit?: string; offset?: string } }>(
       '/crm/deals',
@@ -524,6 +574,23 @@ export class CrmController {
         if (!orgId) throw new BadRequestError('orgId обязателен')
         await this.ensure(req, orgId, 'crm.read')
         return reply.send(await this.crmService.getDealStats(orgId))
+      },
+    )
+  }
+
+  getReports: FastifyPluginAsync = async (fastify) => {
+    fastify.get<{ Querystring: { orgId: string; period?: CrmReportPeriod } }>(
+      '/crm/reports',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        const period = req.query.period ?? '30d'
+        if (!['7d', '30d', '90d', 'all'].includes(period)) {
+          throw new BadRequestError('period должен быть 7d, 30d, 90d или all')
+        }
+        await this.ensure(req, orgId, 'crm.read')
+        return reply.send(await this.crmService.getReports(orgId, period))
       },
     )
   }
@@ -636,6 +703,37 @@ export class CrmController {
     )
   }
 
+  updateQuote: FastifyPluginAsync = async (fastify) => {
+    fastify.put<{ Querystring: { orgId: string }; Params: { id: string }; Body: Parameters<CrmService['updateQuote']>[3] }>(
+      '/crm/sales/quotes/:id',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        const id = Number(req.params.id)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        if (!id) throw new BadRequestError('Некорректный id')
+        await this.ensure(req, orgId, 'sales.write')
+        return reply.send(await this.crmService.updateQuote(orgId, req.user!.id, id, req.body))
+      },
+    )
+  }
+
+  deleteQuote: FastifyPluginAsync = async (fastify) => {
+    fastify.delete<{ Querystring: { orgId: string }; Params: { id: string } }>(
+      '/crm/sales/quotes/:id',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        const id = Number(req.params.id)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        if (!id) throw new BadRequestError('Некорректный id')
+        await this.ensure(req, orgId, 'sales.write')
+        await this.crmService.deleteQuote(orgId, req.user!.id, id)
+        return reply.status(204).send()
+      },
+    )
+  }
+
   getInvoices: FastifyPluginAsync = async (fastify) => {
     fastify.get<{ Querystring: { orgId: string } }>(
       '/crm/sales/invoices',
@@ -658,6 +756,37 @@ export class CrmController {
         if (!orgId) throw new BadRequestError('orgId обязателен')
         await this.ensure(req, orgId, 'sales.write')
         return reply.status(201).send(await this.crmService.createInvoice(orgId, req.user!.id, req.body))
+      },
+    )
+  }
+
+  updateInvoice: FastifyPluginAsync = async (fastify) => {
+    fastify.put<{ Querystring: { orgId: string }; Params: { id: string }; Body: Parameters<CrmService['updateInvoice']>[3] }>(
+      '/crm/sales/invoices/:id',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        const id = Number(req.params.id)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        if (!id) throw new BadRequestError('Некорректный id')
+        await this.ensure(req, orgId, 'sales.write')
+        return reply.send(await this.crmService.updateInvoice(orgId, req.user!.id, id, req.body))
+      },
+    )
+  }
+
+  deleteInvoice: FastifyPluginAsync = async (fastify) => {
+    fastify.delete<{ Querystring: { orgId: string }; Params: { id: string } }>(
+      '/crm/sales/invoices/:id',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        const id = Number(req.params.id)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        if (!id) throw new BadRequestError('Некорректный id')
+        await this.ensure(req, orgId, 'sales.write')
+        await this.crmService.deleteInvoice(orgId, req.user!.id, id)
+        return reply.status(204).send()
       },
     )
   }

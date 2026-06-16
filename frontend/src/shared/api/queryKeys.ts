@@ -32,6 +32,7 @@ export const qk = {
   crmDeals: (orgId: number, filter?: object) => ['crm', orgId, 'deals', filter] as const,
   crmDealStages: (orgId: number) => ['crm', orgId, 'deal-stages'] as const,
   crmDealStats: (orgId: number) => ['crm', orgId, 'deal-stats'] as const,
+  crmReports: (orgId: number, period?: string) => ['crm', orgId, 'reports', period] as const,
   crmDocuments: (orgId: number, type: string, id: number) => ['crm', orgId, 'documents', type, id] as const,
   crmCommunications: (orgId: number, type: string, id: number) => ['crm', orgId, 'communications', type, id] as const,
   crmAutomationRules: (orgId: number) => ['crm', orgId, 'automation-rules'] as const,
