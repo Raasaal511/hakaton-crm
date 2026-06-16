@@ -16,6 +16,12 @@ import {
   usersSchema,
   organizationsSchema,
   usersToOrganizationsSchema,
+  departmentSchema,
+  usersToDepartmentsSchema,
+  pipelinesSchema,
+  columnSchema,
+  taskSchema,
+  taskResponsiblesSchema,
   crmSegmentsSchema,
   crmCompaniesSchema,
   crmContactsSchema,
@@ -120,6 +126,8 @@ async function cleanOrg(orgId: number) {
   await db.delete(crmLeadSourcesSchema).where(eq(crmLeadSourcesSchema.organizationId, orgId))
   await db.delete(crmDealStagesSchema).where(eq(crmDealStagesSchema.organizationId, orgId))
   await db.delete(crmSegmentsSchema).where(eq(crmSegmentsSchema.organizationId, orgId))
+  await db.delete(taskSchema).where(eq(taskSchema.organizationId, orgId))
+  await db.delete(departmentSchema).where(eq(departmentSchema.organizationId, orgId))
   console.log('  ✓ Данные очищены\n')
 }
 
@@ -676,6 +684,163 @@ async function main() {
     }
   }
   log('projects', projCreated, projectDefs.length)
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // N. Departments → Pipelines → Columns → Tasks (Kanban)
+  // ══════════════════════════════════════════════════════════════════════════
+  const deptDefs = [
+    { name: 'Разработка', position: 0 },
+    { name: 'Маркетинг',  position: 1 },
+    { name: 'Продажи',    position: 2 },
+  ]
+
+  const departments: any[] = []
+  let deptNew = 0
+  for (const d of deptDefs) {
+    const [row, created] = await upsert<any>(
+      departmentSchema,
+      and(eq(departmentSchema.name, d.name), eq(departmentSchema.organizationId, org.id)),
+      { name: d.name, organizationId: org.id, position: d.position },
+    )
+    departments.push(row)
+    if (created) deptNew++
+  }
+  log('departments', deptNew, departments.length)
+
+  // Add all users to all departments
+  for (const dept of departments) {
+    for (const [u, role] of [[owner,'admin'],[manager,'admin'],[employee,'member']] as [any,string][]) {
+      await upsert<any>(
+        usersToDepartmentsSchema,
+        and(eq(usersToDepartmentsSchema.userId, u.id), eq(usersToDepartmentsSchema.departmentId, dept.id)),
+        { userId: u.id, departmentId: dept.id, role },
+      )
+    }
+  }
+
+  // Pipeline + columns + tasks per department
+  const pipelineDefs = [
+    {
+      deptIdx: 0, // Разработка
+      name: 'Спринт Q3-2026',
+      columns: ['Бэклог', 'В работе', 'Ревью', 'Тестирование', 'Готово'],
+      colors:  ['#64748b', '#3b82f6', '#f59e0b', '#8b5cf6', '#10b981'],
+      tasks: [
+        { col: 0, name: 'Настроить CI/CD pipeline',          desc: 'GitHub Actions: build, test, deploy to staging.', daysAgo: 10, daysUntil: 5, resp: manager },
+        { col: 0, name: 'Провести рефакторинг модуля CRM',    desc: 'Выделить сервисный слой, покрыть тестами.', daysAgo: 8, daysUntil: 7, resp: employee },
+        { col: 0, name: 'Написать документацию API',          desc: 'OpenAPI 3.0, все эндпоинты с примерами.', daysAgo: 6, daysUntil: 10, resp: owner },
+        { col: 1, name: 'Реализовать WebSocket уведомления',  desc: 'Real-time push для канбан-доски.', daysAgo: 5, daysUntil: 3, resp: employee },
+        { col: 1, name: 'Интеграция с платёжным шлюзом',      desc: 'Stripe / ЮKassa: webhook, возвраты.', daysAgo: 4, daysUntil: 4, resp: manager },
+        { col: 1, name: 'Оптимизация запросов к БД',          desc: 'Проанализировать slow-query log, добавить индексы.', daysAgo: 3, daysUntil: 2, resp: owner },
+        { col: 2, name: 'Code review: модуль склада',         desc: 'Проверить PR #142, оставить комментарии.', daysAgo: 2, daysUntil: 1, resp: manager },
+        { col: 2, name: 'Миграция на Drizzle ORM',            desc: 'Перенести оставшиеся raw-запросы.', daysAgo: 1, daysUntil: 2, resp: employee },
+        { col: 3, name: 'QA: тестирование модуля лидов',      desc: 'Регресс, кейсы для CRM-воронки.', daysAgo: 2, daysUntil: 1, resp: owner },
+        { col: 3, name: 'Нагрузочное тестирование API',       desc: 'k6, целевой RPS: 500.', daysAgo: 1, daysUntil: 1, resp: manager },
+        { col: 4, name: 'Запустить Docker Compose окружение',  desc: 'Prod-like среда одной командой.', daysAgo: 5, daysUntil: 0, resp: owner },
+        { col: 4, name: 'Деплой версии 1.0.0 на прод',        desc: 'Blue-green deployment, rollback-план готов.', daysAgo: 3, daysUntil: 0, resp: manager },
+      ],
+    },
+    {
+      deptIdx: 1, // Маркетинг
+      name: 'Контент Q3',
+      columns: ['Идеи', 'Подготовка', 'Публикация', 'Аналитика'],
+      colors:  ['#94a3b8', '#f59e0b', '#3b82f6', '#10b981'],
+      tasks: [
+        { col: 0, name: 'Контент-план на июль',             desc: 'Темы для блога, соцсети, email-рассылки.', daysAgo: 7, daysUntil: 3, resp: manager },
+        { col: 0, name: 'Идеи для вирусного ролика',        desc: 'Brainstorm с командой, топ-5 концепций.', daysAgo: 5, daysUntil: 5, resp: employee },
+        { col: 0, name: 'Исследование ЦА сегмента B2B',     desc: 'Опросы, интервью, Jobs-to-be-done.', daysAgo: 4, daysUntil: 7, resp: owner },
+        { col: 1, name: 'Написать кейс-стади по клиенту',   desc: 'Результаты в цифрах, 3 страницы.', daysAgo: 3, daysUntil: 2, resp: manager },
+        { col: 1, name: 'Дизайн баннеров для лендинга',     desc: 'Figma, 3 формата: 1080×1080, 1200×628, 300×250.', daysAgo: 2, daysUntil: 3, resp: employee },
+        { col: 1, name: 'SEO-оптимизация страниц продуктов',desc: 'Title, meta, schema.org, H1-H3.', daysAgo: 2, daysUntil: 4, resp: owner },
+        { col: 2, name: 'Email-кампания: реактивация',      desc: 'Сегмент "холодные лиды", A/B тест темы.', daysAgo: 4, daysUntil: 0, resp: manager },
+        { col: 2, name: 'Пост в LinkedIn о запуске v1.0',   desc: 'Анонс фичей, ссылка на демо.', daysAgo: 2, daysUntil: 0, resp: employee },
+        { col: 3, name: 'Анализ открываемости писем',       desc: 'Open rate, CTR, отписки за квартал.', daysAgo: 6, daysUntil: 0, resp: owner },
+        { col: 3, name: 'Отчёт по конверсии лендинга',      desc: 'Воронка: визит → лид → сделка.', daysAgo: 5, daysUntil: 0, resp: manager },
+      ],
+    },
+    {
+      deptIdx: 2, // Продажи
+      name: 'Воронка сделок',
+      columns: ['Новые лиды', 'Квалификация', 'Предложение', 'Переговоры', 'Закрыто'],
+      colors:  ['#64748b', '#3b82f6', '#f59e0b', '#ef4444', '#10b981'],
+      tasks: [
+        { col: 0, name: 'Обработать заявки с сайта',          desc: '12 новых заявок, первый контакт.', daysAgo: 1, daysUntil: 1, resp: employee },
+        { col: 0, name: 'Холодный обзвон: список 50 компаний', desc: 'Скрипт готов, цель: 10 встреч.', daysAgo: 2, daysUntil: 3, resp: manager },
+        { col: 1, name: 'BANT-квалификация ООО «Вектор»',     desc: 'Budget, Authority, Need, Timeline.', daysAgo: 3, daysUntil: 2, resp: owner },
+        { col: 1, name: 'Демо для ГК «Альфа»',                desc: 'Zoom-встреча, показать модуль CRM.', daysAgo: 2, daysUntil: 1, resp: employee },
+        { col: 1, name: 'Анализ потребностей: ИП Захаров',     desc: 'Выяснить боли, подготовить КП.', daysAgo: 1, daysUntil: 2, resp: manager },
+        { col: 2, name: 'КП для ООО «Вектор»',                desc: 'Индивидуальное предложение, три тарифа.', daysAgo: 4, daysUntil: 1, resp: owner },
+        { col: 2, name: 'Согласование скидки с ГК «Альфа»',   desc: 'Уступка до 15%, нужен апрув.', daysAgo: 2, daysUntil: 2, resp: manager },
+        { col: 3, name: 'Переговоры по договору: ТД «Меркурий»',desc: 'Юрист подтвердил, осталось подписать.', daysAgo: 5, daysUntil: 1, resp: employee },
+        { col: 3, name: 'Финальные условия: ООО «Вектор»',    desc: 'Дожать сделку, дедлайн — завтра.', daysAgo: 1, daysUntil: 1, resp: owner },
+        { col: 4, name: 'Сделка: ГК «Альфа» — подписано',     desc: 'Договор подписан, счёт выставлен.', daysAgo: 7, daysUntil: 0, resp: manager },
+        { col: 4, name: 'Сделка: ИП Захаров — выиграна',      desc: 'Оплата получена, онбординг запланирован.', daysAgo: 5, daysUntil: 0, resp: employee },
+        { col: 4, name: 'Сделка: ТД «Меркурий» — закрыта',    desc: 'Документы в бухгалтерии.', daysAgo: 3, daysUntil: 0, resp: owner },
+      ],
+    },
+  ]
+
+  let totalTasks = 0
+  let newTasks = 0
+  for (const pd of pipelineDefs) {
+    const dept = departments[pd.deptIdx]
+
+    // Pipeline
+    const [pipeline] = await upsert<any>(
+      pipelinesSchema,
+      and(eq(pipelinesSchema.name, pd.name), eq(pipelinesSchema.departmentId, dept.id)),
+      { name: pd.name, departmentId: dept.id },
+    )
+
+    // Columns
+    const cols: any[] = []
+    for (let i = 0; i < pd.columns.length; i++) {
+      const [col] = await upsert<any>(
+        columnSchema,
+        and(
+          eq(columnSchema.name, pd.columns[i]),
+          eq(columnSchema.departmentId, dept.id),
+          eq(columnSchema.pipelineId, pipeline.id),
+        ),
+        { name: pd.columns[i], departmentId: dept.id, pipelineId: pipeline.id, position: i, color: pd.colors[i] },
+      )
+      cols.push(col)
+    }
+
+    // Tasks
+    for (let ti = 0; ti < pd.tasks.length; ti++) {
+      const t = pd.tasks[ti]
+      const col = cols[t.col]
+      const startDate = daysAgo(t.daysAgo)
+      const deadLine  = daysFromNow(t.daysUntil)
+      totalTasks++
+
+      const existing = await db.select({ id: taskSchema.id })
+        .from(taskSchema)
+        .where(and(eq(taskSchema.name, t.name), eq(taskSchema.organizationId, org.id)))
+        .limit(1)
+      if (existing[0]) continue
+
+      const [task] = await db.insert(taskSchema).values({
+        name: t.name,
+        description: t.desc,
+        columnId: col.id,
+        organizationId: org.id,
+        responsibleId: t.resp.id,
+        creatorId: owner.id,
+        startDate,
+        deadLine,
+        position: ti * 1000,
+        completedAt: t.col === pd.columns.length - 1 ? daysAgo(t.daysAgo - 1) : null,
+      }).returning({ id: taskSchema.id })
+
+      if (task) {
+        newTasks++
+        await db.insert(taskResponsiblesSchema).values({ taskId: task.id, userId: t.resp.id }).onConflictDoNothing()
+      }
+    }
+  }
+  log('kanban tasks', newTasks, totalTasks)
 
   // ══════════════════════════════════════════════════════════════════════════
   // Done
