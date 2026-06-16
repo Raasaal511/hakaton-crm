@@ -9,7 +9,7 @@ import { setFavoritePipelinesForOrg } from 'entities/pipeline/model/favorites'
 import { userModel } from 'entities/user'
 import { organizationModel } from 'entities/organization'
 import { departmentModel } from 'entities/department'
-import { setMembers, setOrganizations } from 'shared/api/events/organization'
+import { setCurrentOrganization, setMembers, setOrganizations } from 'shared/api/events/organization'
 import { setDepartments } from 'shared/api/events/department'
 import { organizationsAPI } from 'shared/api/requests/organizations'
 import { departmentsAPI } from 'shared/api/requests/departments'
@@ -23,6 +23,7 @@ import styles from './AppLayout.module.css'
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed'
 const COMMAND_PALETTE_KEY = 'commandPaletteOpen'
+const ORG_DATA_ROUTES = ['/dashboard', '/crm', '/catalog', '/finance', '/ai']
 
 function readSidebarCollapsed(): boolean {
   try {
@@ -86,6 +87,19 @@ export function AppLayout({ children }: AppLayoutProps) {
     if (organizations.length > 0) return
     organizationsAPI.getAll().then(setOrganizations).catch(() => setOrganizations([]))
   }, [currentUser?.id, organizations.length])
+
+  useEffect(() => {
+    if (!currentUser) return
+    if (!currentOrganization?.isPersonal) return
+    if (!ORG_DATA_ROUTES.some((route) => location.pathname === route || location.pathname.startsWith(`${route}/`))) return
+
+    const teamOrganization = organizations.find((org) => !org.isPersonal)
+    if (!teamOrganization) return
+
+    setCurrentOrganization(teamOrganization)
+    setMembers([])
+    setDepartments([])
+  }, [currentUser?.id, currentOrganization?.id, currentOrganization?.isPersonal, location.pathname, organizations])
 
   useEffect(() => {
     if (!currentUser) return

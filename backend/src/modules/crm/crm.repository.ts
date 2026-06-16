@@ -896,4 +896,46 @@ export class CrmRepository {
       .orderBy(desc(crmActivitySchema.createdAt))
       .limit(100)
   }
+
+  async getRecentActivity(orgId: number, limit = 30) {
+    const activities = await this.db
+      .select()
+      .from(crmActivitySchema)
+      .where(eq(crmActivitySchema.organizationId, orgId))
+      .orderBy(desc(crmActivitySchema.createdAt))
+      .limit(limit)
+
+    const communications = await this.db
+      .select()
+      .from(crmCommunicationsSchema)
+      .where(eq(crmCommunicationsSchema.organizationId, orgId))
+      .orderBy(desc(crmCommunicationsSchema.createdAt))
+      .limit(limit)
+
+    const actItems = activities.map((a) => ({
+      type: 'activity' as const,
+      id: `act_${a.id}`,
+      kind: a.kind,
+      entityType: a.entityType,
+      entityId: a.entityId,
+      payload: a.payload,
+      actorUserId: a.actorUserId,
+      createdAt: a.createdAt,
+    }))
+
+    const commItems = communications.map((c) => ({
+      type: 'communication' as const,
+      id: `comm_${c.id}`,
+      kind: `communication_${c.channel}` as string,
+      entityType: c.entityType,
+      entityId: c.entityId,
+      payload: { channel: c.channel, direction: c.direction, subject: c.subject, body: c.body, status: c.status } as Record<string, unknown>,
+      actorUserId: c.actorUserId,
+      createdAt: c.createdAt,
+    }))
+
+    return [...actItems, ...commItems]
+      .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
+      .slice(0, limit)
+  }
 }

@@ -191,6 +191,8 @@ export type SalesInvoice = {
   organizationId: number
   dealId: number | null
   quoteId: number | null
+  companyId: number | null
+  contactId: number | null
   number: string
   status: string
   total: number
@@ -363,4 +365,20 @@ export const crmAPI = {
     axiosAPI.get<{ items: unknown[] }>(`/crm/activity/${entityType}/${entityId}`, {
       params: { orgId },
     }).then((r) => r.data),
+
+  getRecentActivity: (orgId: number, limit = 30) =>
+    axiosAPI.get<{ items: RecentActivityItem[] }>('/crm/activity/recent', {
+      params: { orgId, limit },
+    }).then((r) => r.data),
+}
+
+export type RecentActivityItem = {
+  type: 'activity' | 'communication'
+  id: string
+  kind: string
+  entityType: string
+  entityId: number
+  payload: Record<string, unknown>
+  actorUserId: number | null
+  createdAt: string | null
 }

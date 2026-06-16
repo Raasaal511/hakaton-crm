@@ -427,4 +427,8 @@ export class CrmService {
   async getEntityActivity(orgId: number, entityType: string, entityId: number) {
     return this.repo.getActivity(orgId, entityType, entityId)
   }
+
+  async getRecentActivity(orgId: number, limit = 30) {
+    return this.repo.getRecentActivity(orgId, limit)
+  }
 }

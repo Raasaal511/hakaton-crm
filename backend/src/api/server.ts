@@ -21,6 +21,7 @@ import { MAX_TASK_ATTACHMENT_BYTES } from '../infra/libs/taskAttachmentValidatio
 import { API_VERSION } from '../infra/libs/apiVersion.js'
 import { CrmController } from '../modules/crm/crm.controller.js'
 import { CatalogController } from '../modules/catalog/catalog.controller.js'
+import { AiController } from '../modules/ai/ai.controller.js'
 import fastifyWebsocket from '@fastify/websocket'
 import { registerWsRoutes } from '../realtime/ws.server.js'
 
@@ -44,6 +45,7 @@ export class Server implements IServer {
     @inject(TYPES.PushController) private _push: PushController,
     @inject(TYPES.CrmController) private _crm: CrmController,
     @inject(TYPES.CatalogController) private _catalog: CatalogController,
+    @inject(TYPES.AiController) private _ai: AiController,
   ) { }
 
   public async start() {
@@ -281,6 +283,14 @@ export class Server implements IServer {
         await instance.register(this._catalog.getServiceById)
         await instance.register(this._catalog.updateService)
         await instance.register(this._catalog.deleteService)
+
+        // AI (DeepSeek)
+        await instance.register(this._ai.status)
+        await instance.register(this._ai.scoreLead)
+        await instance.register(this._ai.getInsights)
+        await instance.register(this._ai.enrichContact)
+        await instance.register(this._ai.generateEmail)
+        await instance.register(this._ai.chat)
 
       },
       { prefix: `/${serverConfig.apiPrefix}` }

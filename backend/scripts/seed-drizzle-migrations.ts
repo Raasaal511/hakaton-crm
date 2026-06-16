@@ -12,8 +12,13 @@ import pg from 'pg'
 const HASH_0011 = 'd1e8054d2da73ab16b684dc10294f86f31ec5e75ede2927e91a2374d453e82c4'
 const CREATED_AT_0011 = 1773425077740
 
-async function main() {
-  const client = new pg.Client({
+function createClient() {
+  const databaseUrl = process.env.DATABASE_URL?.trim()
+  if (databaseUrl) {
+    return new pg.Client({ connectionString: databaseUrl })
+  }
+
+  return new pg.Client({
     host: process.env.DB_HOST ?? 'localhost',
     port: Number(process.env.DB_PORT ?? 5432),
     user: process.env.DB_USER ?? 'postgres',
@@ -21,6 +26,10 @@ async function main() {
     database: process.env.DB_NAME ?? 'postgres',
     ssl: false,
   })
+}
+
+async function main() {
+  const client = createClient()
 
   await client.connect()
 

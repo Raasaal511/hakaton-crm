@@ -33,6 +33,12 @@ export type TemplateKey =
   | 'analytics_summary'
 
 export const TEMPLATES: Record<TemplateKey, (ctx: AiContext) => string> = {
+  lead_analysis: (ctx) =>
+    `Анализ лидов ${ctx.orgName}:\n\n` +
+    `• Всего лидов: ${ctx.leadCount}\n` +
+    `• Объём воронки: ${ctx.pipelineValue}\n` +
+    `• Конверсия: ${ctx.conversionRate}\n\n` +
+    `Рекомендую сосредоточиться на сделках с высокой вероятностью закрытия.`,
   greeting: (ctx) =>
     `Привет! Я Meridian AI — ваш интеллектуальный CRM-ассистент.\n\n` +
     `Я проанализировал данные ${ctx.orgName}: ${ctx.leadCount} лидов, ${ctx.dealCount} сделок, ${ctx.contactCount} контактов.\n\n` +

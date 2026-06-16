@@ -59,6 +59,9 @@ const TYPES = {
   CatalogService: Symbol.for('CatalogService'),
   CatalogController: Symbol.for('CatalogController'),
 
+  AiService: Symbol.for('AiService'),
+  AiController: Symbol.for('AiController'),
+
   DB: Symbol.for('DB'),
 }
 export { TYPES }

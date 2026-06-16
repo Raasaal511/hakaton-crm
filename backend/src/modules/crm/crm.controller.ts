@@ -689,5 +689,20 @@ export class CrmController {
         return reply.send(activity)
       },
     )
+
+    fastify.get<{
+      Querystring: { orgId: string; limit?: string }
+    }>(
+      '/crm/activity/recent',
+      { preHandler: [authMiddleware] },
+      async (req, reply) => {
+        const orgId = Number(req.query.orgId)
+        const limit = Math.min(Number(req.query.limit ?? 30), 100)
+        if (!orgId) throw new BadRequestError('orgId обязателен')
+        await this.ensure(req, orgId, 'crm.read')
+        const items = await this.crmService.getRecentActivity(orgId, limit)
+        return reply.send({ items })
+      },
+    )
   }
 }

@@ -27,7 +27,6 @@ import { AppLayout, Button } from 'shared/ui'
 import { PageHeader } from 'shared/ui/PageHeader/PageHeader'
 import { KPICard } from 'shared/ui/KPICard/KPICard'
 import { Card, CardHeader } from 'shared/ui/Card/Card'
-import { FormModal, formStyles } from 'shared/ui/FormModal/FormModal'
 import { organizationModel } from 'entities/organization'
 import { userModel } from 'entities/user'
 import {
@@ -38,199 +37,13 @@ import {
 } from 'shared/lib/crmDemoData'
 import { useChartTheme } from 'shared/lib'
 import { streamInto } from 'shared/lib/ai'
-import { crmAPI, type CrmCommunication } from 'shared/api/requests/crm'
+import { crmAPI } from 'shared/api/requests/crm'
 import { qk } from 'shared/api/queryKeys'
 import { LeadForm } from 'features/crm/LeadForm'
 import { ContactForm } from 'features/crm/ContactForm'
+import { LogCommunicationModal, type CommChannel } from 'features/crm/LogCommunicationModal'
 import styles from './DashboardPage.module.css'
 
-type CommunicationChannel = 'phone' | 'email'
-type CommunicationTargetType = 'contact' | 'lead' | 'company'
-
-const TARGET_TYPE_LABELS: Record<CommunicationTargetType, string> = {
-  contact: 'Контакт',
-  lead: 'Лид',
-  company: 'Компания',
-}
-
-function CommunicationForm({
-  open,
-  channel,
-  orgId,
-  onClose,
-}: {
-  open: boolean
-  channel: CommunicationChannel
-  orgId: number
-  onClose: () => void
-}) {
-  const queryClient = useQueryClient()
-  const [targetType, setTargetType] = useState<CommunicationTargetType>('contact')
-  const [targetId, setTargetId] = useState('')
-  const [subject, setSubject] = useState('')
-  const [body, setBody] = useState('')
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    if (!open) return
-    setTargetType('contact')
-    setTargetId('')
-    setSubject(channel === 'phone' ? 'Звонок клиенту' : 'Письмо клиенту')
-    setBody('')
-    setError('')
-  }, [channel, open])
-
-  const { data: contactsData } = useQuery({
-    queryKey: qk.crmContacts(orgId, { limit: 100 }),
-    queryFn: () => crmAPI.getContacts(orgId, { limit: 100 }),
-    enabled: Boolean(orgId) && open,
-    staleTime: 60_000,
-  })
-
-  const { data: leadsData } = useQuery({
-    queryKey: qk.crmLeads(orgId, { limit: 100 }),
-    queryFn: () => crmAPI.getLeads(orgId, { limit: 100 }),
-    enabled: Boolean(orgId) && open,
-    staleTime: 60_000,
-  })
-
-  const { data: companiesData } = useQuery({
-    queryKey: qk.crmCompanies(orgId, { limit: 100 }),
-    queryFn: () => crmAPI.getCompanies(orgId, { limit: 100 }),
-    enabled: Boolean(orgId) && open,
-    staleTime: 60_000,
-  })
-
-  const contacts = contactsData?.items ?? []
-  const leads = leadsData?.items ?? []
-  const companies = companiesData?.items ?? []
-
-  const options = targetType === 'contact'
-    ? contacts.map((contact) => ({
-        id: contact.id,
-        label: [contact.firstName, contact.lastName].filter(Boolean).join(' ') || `Контакт #${contact.id}`,
-      }))
-    : targetType === 'lead'
-      ? leads.map((lead) => ({ id: lead.id, label: lead.title }))
-      : companies.map((company) => ({ id: company.id, label: company.name }))
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      crmAPI.createCommunication(orgId, {
-        entityType: targetType,
-        entityId: Number(targetId),
-        channel,
-        direction: 'outbound',
-        subject: subject.trim() || undefined,
-        body: body.trim() || undefined,
-        status: channel === 'phone' ? 'completed' : 'sent',
-      }),
-    onSuccess: (communication: CrmCommunication) => {
-      queryClient.invalidateQueries({ queryKey: qk.crmCommunications(orgId, communication.entityType, communication.entityId) })
-      queryClient.invalidateQueries({ queryKey: qk.crmActivity(orgId, communication.entityType, communication.entityId) })
-      onClose()
-    },
-  })
-
-  function handleSubmit() {
-    if (!targetId) {
-      setError('Выберите, к кому привязать действие')
-      return
-    }
-    setError('')
-    mutation.mutate()
-  }
-
-  return (
-    <FormModal
-      title={channel === 'phone' ? 'Зафиксировать звонок' : 'Зафиксировать письмо'}
-      open={open}
-      onClose={onClose}
-      footer={
-        <>
-          <button type="button" className={formStyles.cancelBtn} onClick={onClose}>
-            Отмена
-          </button>
-          <button
-            type="button"
-            className={formStyles.submitBtn}
-            onClick={handleSubmit}
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? 'Сохраняю...' : 'Сохранить'}
-          </button>
-        </>
-      }
-    >
-      <div className={formStyles.form}>
-        <div className={formStyles.fieldRow}>
-          <div className={formStyles.field}>
-            <label className={formStyles.label}>Тип</label>
-            <select
-              className={formStyles.select}
-              value={targetType}
-              onChange={(e) => {
-                setTargetType(e.target.value as CommunicationTargetType)
-                setTargetId('')
-                setError('')
-              }}
-            >
-              {(Object.keys(TARGET_TYPE_LABELS) as CommunicationTargetType[]).map((type) => (
-                <option key={type} value={type}>{TARGET_TYPE_LABELS[type]}</option>
-              ))}
-            </select>
-          </div>
-          <div className={formStyles.field}>
-            <label className={formStyles.label}>
-              Объект <span className={formStyles.required}>*</span>
-            </label>
-            <select
-              className={formStyles.select}
-              value={targetId}
-              onChange={(e) => {
-                setTargetId(e.target.value)
-                setError('')
-              }}
-            >
-              <option value="">— выберите —</option>
-              {options.map((option) => (
-                <option key={option.id} value={option.id}>{option.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className={formStyles.field}>
-          <label className={formStyles.label}>Тема</label>
-          <input
-            className={formStyles.input}
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder={channel === 'phone' ? 'Итоги звонка' : 'Тема письма'}
-          />
-        </div>
-
-        <div className={formStyles.field}>
-          <label className={formStyles.label}>Заметка</label>
-          <textarea
-            className={formStyles.textarea}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder={channel === 'phone' ? 'О чём договорились...' : 'Краткое содержание письма...'}
-            rows={4}
-          />
-        </div>
-
-        {error && <div className={formStyles.error}>{error}</div>}
-        {mutation.isError && (
-          <div className={formStyles.error}>
-            Ошибка: {(mutation.error as Error)?.message ?? 'Не удалось сохранить действие'}
-          </div>
-        )}
-      </div>
-    </FormModal>
-  )
-}
 
 // ── AI Insights (dynamic, seeded from real stats) ─────────────────────────────
 function AiInsightsCard({
@@ -376,7 +189,7 @@ export function DashboardPage() {
   const orgId = organization?.id ?? 0
   const [leadFormOpen, setLeadFormOpen] = useState(false)
   const [contactFormOpen, setContactFormOpen] = useState(false)
-  const [communicationChannel, setCommunicationChannel] = useState<CommunicationChannel | null>(null)
+  const [communicationChannel, setCommunicationChannel] = useState<CommChannel | null>(null)
 
   // ── Real data queries ──────────────────────────────────────────────────────
   const { data: leadStats } = useQuery({
@@ -407,6 +220,14 @@ export function DashboardPage() {
     staleTime: 60_000,
   })
 
+  const { data: recentActivityData } = useQuery({
+    queryKey: qk.crmRecentActivity(orgId),
+    queryFn: () => crmAPI.getRecentActivity(orgId, 20),
+    enabled: Boolean(orgId),
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  })
+
   // ── Derived values ─────────────────────────────────────────────────────────
   const totalLeads = leadStats?.totalLeads ?? 0
   const totalAmount = leadStats?.totalAmount ?? 0
@@ -435,8 +256,8 @@ export function DashboardPage() {
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5)
 
-  // Recent activity from lead updates
-  const recentLeads = (leadsData?.items ?? []).slice(0, 6)
+  // Real activity feed (communications + crm_activity events)
+  const recentActivityItems = recentActivityData?.items ?? []
 
   return (
     <AppLayout>
@@ -664,29 +485,43 @@ export function DashboardPage() {
                 </div>
               </Card>
 
-              {/* Recent leads as activity feed */}
+              {/* Real activity feed */}
               <Card padding="none">
-                <CardHeader title="Последние лиды" description="Недавние изменения" />
+                <CardHeader title="Лента активности" description="Последние события в CRM" />
                 <div className={styles.actList}>
-                  {recentLeads.length === 0 ? (
+                  {recentActivityItems.length === 0 ? (
                     <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 13 }}>
-                      Нет недавних активностей
+                      Нет активностей — позвоните клиенту или создайте лид
                     </div>
-                  ) : recentLeads.map((lead) => {
-                    const stageColor = LEAD_STAGE_COLORS[lead.stage as keyof typeof LEAD_STAGE_COLORS] ?? '#6b7280'
+                  ) : recentActivityItems.map((item) => {
+                    const isCall  = item.kind.includes('phone') || item.kind.includes('call')
+                    const isEmail = item.kind.includes('email')
+                    const isComm  = item.type === 'communication'
+                    const isWon   = item.kind.includes('won')
+                    const isNew   = item.kind.includes('created')
+
+                    const dotType = isCall ? 'call' : isEmail ? 'email' : isWon ? 'win' : isNew ? 'created' : 'deal'
+                    const dotColor = isCall ? '#7c3aed' : isEmail ? '#0369a1' : isWon ? '#10b981' : isNew ? '#6366f1' : '#6b7280'
+
+                    const subject = (item.payload.subject as string) ?? ''
+                    const channel = (item.payload.channel as string) ?? ''
+                    const label = isComm
+                      ? (subject || (isCall ? 'Звонок' : isEmail ? 'Письмо' : `${channel}`))
+                      : item.kind.replace(/_/g, ' ')
+
+                    const entityLabel = item.entityType === 'contact' ? 'контакт' : item.entityType === 'lead' ? 'лид' : 'компания'
+
                     return (
-                      <div key={lead.id} className={styles.actItem}>
-                        <ActivityDot type={lead.stage === 'won' ? 'win' : 'deal'} color={stageColor} />
+                      <div key={item.id} className={styles.actItem}>
+                        <ActivityDot type={dotType} color={dotColor} />
                         <div className={styles.actBody}>
-                          <p className={styles.actText}>{lead.title}</p>
+                          <p className={styles.actText}>{label}</p>
                           <div className={styles.actMeta}>
                             <span className={styles.actUser}>
-                              <span className={styles.actAvatar}>
-                                {LEAD_STAGE_LABELS[lead.stage as keyof typeof LEAD_STAGE_LABELS]?.slice(0, 1) ?? '?'}
-                              </span>
-                              {formatRubles(lead.amount)}
+                              <span className={styles.actAvatar}>{entityLabel[0].toUpperCase()}</span>
+                              {entityLabel} #{item.entityId}
                             </span>
-                            <span className={styles.actTime}>{timeAgo(lead.updatedAt)}</span>
+                            <span className={styles.actTime}>{timeAgo(item.createdAt ?? '')}</span>
                           </div>
                         </div>
                       </div>
@@ -707,10 +542,9 @@ export function DashboardPage() {
         open={contactFormOpen}
         onClose={() => setContactFormOpen(false)}
       />
-      <CommunicationForm
+      <LogCommunicationModal
         open={communicationChannel !== null}
         channel={communicationChannel ?? 'phone'}
-        orgId={orgId}
         onClose={() => setCommunicationChannel(null)}
       />
     </AppLayout>

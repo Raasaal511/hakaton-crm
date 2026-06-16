@@ -10,17 +10,14 @@ import { Modal } from 'shared/ui'
 import { CreateOrganizationForm } from 'features/organization/create'
 import {
   BarChart3,
-  BookOpen,
   Bot,
   Briefcase,
   Building2,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   CircleDollarSign,
   FolderKanban,
   LayoutDashboard,
-  Package,
+  LogOut, Package,
   Plus,
   Settings,
   Shield,
@@ -32,8 +29,8 @@ import {
 } from 'lucide-react'
 import styles from './Sidebar.module.css'
 
-const iconSize = 16
-const iconStroke = 1.75
+const SZ = 15
+const SW = 1.6
 
 export type SidebarProps = {
   id?: string
@@ -42,17 +39,6 @@ export type SidebarProps = {
   isMobileLayout?: boolean
   mobileDrawerOpen?: boolean
   onCloseMobileDrawer?: () => void
-}
-
-type NavItem = {
-  label: string
-  to?: string
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
-  matchPaths?: string[]
-  children?: NavItem[]
-  dynamic?: boolean
-  hidden?: boolean
-  adminOnly?: boolean
 }
 
 export function Sidebar({
@@ -65,28 +51,21 @@ export function Sidebar({
 }: SidebarProps) {
   const location = useLocation()
   const navigate = useNavigate()
-  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false)
-  const [createOrgModalOpen, setCreateOrgModalOpen] = useState(false)
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    crm: true,
-    sales: false,
-    catalog: false,
-    organization: false,
-  })
-  const orgDropdownRef = useRef<HTMLDivElement>(null)
+  const [orgOpen, setOrgOpen] = useState(false)
+  const [createOrgOpen, setCreateOrgOpen] = useState(false)
+  const orgRef = useRef<HTMLDivElement>(null)
 
   const currentUser = userModel.selectors.useUser()
   const organizations = organizationModel.selectors.useOrganizations()
-  const currentOrganization = organizationModel.selectors.useCurrentOrganization()
+  const currentOrg = organizationModel.selectors.useCurrentOrganization()
   const orgMembers = organizationModel.selectors.useOrganizationMembers()
   const { canManage } = useCanManage(orgMembers, currentUser?.id)
   const canViewOrgAnalytics =
-    currentOrganization != null &&
-    canViewOrganizationFullAnalytics(
-      currentOrganization.isPersonal,
-      canManage,
-      currentUser?.systemRole,
-    )
+    currentOrg != null &&
+    canViewOrganizationFullAnalytics(currentOrg.isPersonal, canManage, currentUser?.systemRole)
+
+  const navCollapsed = collapsed && !isMobileLayout
+  const drawerOpen = isMobileLayout && mobileDrawerOpen
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -97,457 +76,206 @@ export function Sidebar({
   }
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (orgDropdownRef.current && !orgDropdownRef.current.contains(e.target as Node)) {
-        setOrgDropdownOpen(false)
-      }
+    function outside(e: MouseEvent) {
+      if (orgRef.current && !orgRef.current.contains(e.target as Node)) setOrgOpen(false)
     }
-    if (orgDropdownOpen) document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [orgDropdownOpen])
+    if (orgOpen) document.addEventListener('mousedown', outside)
+    return () => document.removeEventListener('mousedown', outside)
+  }, [orgOpen])
 
-  const isActive = (path: string) =>
+  const active = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/')
 
-  const drawerOpen = isMobileLayout && mobileDrawerOpen
-  const navCollapsed = collapsed && !isMobileLayout
-
-  const settle = () => {
-    setOrgDropdownOpen(false)
-    onCloseMobileDrawer?.()
-  }
-
-  const toggleSection = (key: string) => {
-    if (navCollapsed) return
-    setExpandedSections((s) => ({ ...s, [key]: !s[key] }))
-  }
-
-  const orgTitle = currentOrganization?.name || 'Выберите…'
+  const settle = () => { setOrgOpen(false); onCloseMobileDrawer?.() }
 
   return (
     <aside
       id={id}
       className={cn(
         styles.sidebar,
-        navCollapsed && styles.sidebarCollapsed,
-        isMobileLayout && styles.sidebarMobile,
-        drawerOpen && styles.sidebarMobileOpen,
+        navCollapsed && styles.collapsed,
+        isMobileLayout && styles.mobile,
+        drawerOpen && styles.mobileOpen,
       )}
     >
-      {/* ── Brand header ─────────────────────────── */}
-      <div className={styles.header}>
-        <div className={styles.headerTopRow}>
-          <Link
-            to="/dashboard"
-            className={styles.brand}
-            title={navCollapsed ? 'Meridian — на главную' : undefined}
-            onClick={settle}
-          >
-            <div className={styles.brandIcon} aria-hidden>M</div>
-            <span className={styles.brandName}>Meridian</span>
-          </Link>
-          {isMobileLayout && (
-            <button
-              type="button"
-              className={styles.mobileDrawerClose}
-              onClick={onCloseMobileDrawer}
-              aria-label="Закрыть меню"
-            >
-              <X size={18} strokeWidth={2} aria-hidden />
-            </button>
-          )}
-          {!isMobileLayout && (
-            <button
-              type="button"
-              className={styles.collapseBtn}
-              onClick={onToggleCollapsed}
-              title={collapsed ? 'Развернуть' : 'Свернуть'}
-              aria-label={collapsed ? 'Развернуть панель' : 'Свернуть панель'}
-            >
-              {collapsed
-                ? <ChevronRight size={14} strokeWidth={2} aria-hidden />
-                : <ChevronLeft size={14} strokeWidth={2} aria-hidden />
-              }
-            </button>
-          )}
-        </div>
+      {/* ── Logo ─────────────────────────────────────────── */}
+      <div className={styles.logo}>
+        <Link to="/dashboard" className={styles.logoLink} onClick={settle} title="Meridian">
+          <div className={styles.logoMark}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="8" stroke="url(#sg)" strokeWidth="1.5"/>
+              <path d="M5 9h2.5L9 6l1.5 6L12 9h1" stroke="url(#sg)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <defs>
+                <linearGradient id="sg" x1="0" y1="0" x2="18" y2="18" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#818cf8"/>
+                  <stop offset="1" stopColor="#a78bfa"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span className={styles.logoText}>Meridian</span>
+        </Link>
 
-        {/* Org switcher */}
-        <div className={styles.orgSelector} ref={orgDropdownRef}>
-          <button
-            type="button"
-            className={cn(styles.orgTrigger, orgDropdownOpen && styles.orgTriggerOpen)}
-            onClick={() => setOrgDropdownOpen((v) => !v)}
-            aria-haspopup="listbox"
-            aria-expanded={orgDropdownOpen}
-            title={navCollapsed ? `Организация: ${orgTitle}` : undefined}
-          >
-            <div className={styles.orgAvatar} aria-hidden>
-              {currentOrganization?.name?.[0]?.toUpperCase() || '?'}
-            </div>
-            <span className={styles.orgLabel}>
-              {currentOrganization?.name || 'Выберите…'}
-            </span>
-            <ChevronDown
-              size={12}
-              strokeWidth={2}
-              className={cn(styles.orgChevron, orgDropdownOpen && styles.orgChevronOpen)}
-              aria-hidden
-            />
+        {isMobileLayout ? (
+          <button type="button" className={styles.closeBtn} onClick={onCloseMobileDrawer} aria-label="Закрыть">
+            <X size={16} strokeWidth={2} />
           </button>
-
-          {orgDropdownOpen && (
-            <div
-              className={cn(styles.orgDropdown, navCollapsed && styles.orgDropdownFlyout)}
-              role="listbox"
-              aria-label="Организации"
-            >
-              <div className={styles.orgDropdownHeader}>Пространства</div>
-              {organizations.map((org) => (
-                <Link
-                  key={org.id}
-                  to={`/organizations/${org.id}`}
-                  role="option"
-                  aria-selected={currentOrganization?.id === org.id}
-                  className={cn(styles.orgOption, currentOrganization?.id === org.id && styles.orgOptionActive)}
-                  onClick={() => { setOrgDropdownOpen(false); settle() }}
-                >
-                  <div className={styles.orgOptionIcon} aria-hidden>{org.name[0]?.toUpperCase()}</div>
-                  <span>{org.name}</span>
-                </Link>
-              ))}
-              <div className={styles.orgDropdownDivider} />
-              <button
-                type="button"
-                className={styles.orgOptionCreate}
-                onClick={() => { setOrgDropdownOpen(false); setCreateOrgModalOpen(true) }}
-              >
-                <Plus size={14} strokeWidth={2} aria-hidden />
-                Создать организацию
-              </button>
-            </div>
-          )}
-        </div>
+        ) : (
+          <button type="button" className={styles.collapseBtn} onClick={onToggleCollapsed} aria-label={collapsed ? 'Развернуть' : 'Свернуть'}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              {collapsed
+                ? <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                : <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              }
+            </svg>
+          </button>
+        )}
       </div>
 
-      <Modal
-        isOpen={createOrgModalOpen}
-        onClose={() => setCreateOrgModalOpen(false)}
-        title="Создать организацию"
-      >
-        <CreateOrganizationForm onSuccess={() => setCreateOrgModalOpen(false)} />
+      {/* ── Org switcher ─────────────────────────────────── */}
+      <div className={styles.orgWrap} ref={orgRef}>
+        <button
+          type="button"
+          className={cn(styles.orgBtn, orgOpen && styles.orgBtnOpen)}
+          onClick={() => setOrgOpen(v => !v)}
+          title={navCollapsed ? currentOrg?.name : undefined}
+        >
+          <span className={styles.orgDot}>{currentOrg?.name?.[0]?.toUpperCase() ?? '?'}</span>
+          <span className={styles.orgName}>{currentOrg?.name ?? 'Выберите...'}</span>
+          <ChevronDown size={12} strokeWidth={2} className={cn(styles.orgArrow, orgOpen && styles.orgArrowOpen)} />
+        </button>
+
+        {orgOpen && (
+          <div className={cn(styles.orgMenu, navCollapsed && styles.orgMenuFlyout)}>
+            <p className={styles.orgMenuLabel}>Пространства</p>
+            {organizations.map(org => (
+              <Link
+                key={org.id}
+                to={`/organizations/${org.id}`}
+                className={cn(styles.orgItem, currentOrg?.id === org.id && styles.orgItemActive)}
+                onClick={() => { setOrgOpen(false); settle() }}
+              >
+                <span className={styles.orgDot}>{org.name[0]?.toUpperCase()}</span>
+                <span>{org.name}</span>
+              </Link>
+            ))}
+            <div className={styles.orgDivider} />
+            <button
+              type="button"
+              className={styles.orgCreate}
+              onClick={() => { setOrgOpen(false); setCreateOrgOpen(true) }}
+            >
+              <Plus size={13} strokeWidth={2} />
+              Создать
+            </button>
+          </div>
+        )}
+      </div>
+
+      <Modal isOpen={createOrgOpen} onClose={() => setCreateOrgOpen(false)} title="Создать организацию">
+        <CreateOrganizationForm onSuccess={() => setCreateOrgOpen(false)} />
       </Modal>
 
-      {/* ── Nav ──────────────────────────────────── */}
-      <nav className={styles.nav} aria-label="Главная навигация">
-        <div className={styles.navScroll}>
+      {/* ── Nav ──────────────────────────────────────────── */}
+      <nav className={styles.nav}>
+        <div className={styles.scroll}>
 
-          {/* Dashboard */}
-          <NavLink
-            to="/dashboard"
-            icon={LayoutDashboard}
-            label="Дашборд"
-            active={isActive('/dashboard')}
-            collapsed={navCollapsed}
-            onClick={settle}
-          />
+          <N to="/dashboard"   icon={LayoutDashboard} label="Дашборд"   active={active('/dashboard')}   c={navCollapsed} onClick={settle} />
 
-          {/* CRM */}
-          <NavGroup
-            label="CRM"
-            sectionKey="crm"
-            expanded={expandedSections.crm}
-            collapsed={navCollapsed}
-            onToggle={() => toggleSection('crm')}
-            active={isActive('/crm')}
-          >
-            <NavLink
-              to="/crm/contacts"
-              icon={Users}
-              label="Контакты"
-              active={isActive('/crm/contacts')}
-              collapsed={navCollapsed}
-              onClick={settle}
-              indent
-            />
-            <NavLink
-              to="/crm/companies"
-              icon={Building2}
-              label="Компании"
-              active={isActive('/crm/companies')}
-              collapsed={navCollapsed}
-              onClick={settle}
-              indent
-            />
-            <NavLink
-              to="/crm/leads"
-              icon={Target}
-              label="Лиды"
-              active={isActive('/crm/leads')}
-              collapsed={navCollapsed}
-              onClick={settle}
-              indent
-            />
-          </NavGroup>
+          <div className={styles.section}>
+            <span className={styles.sectionLabel}>CRM</span>
+          </div>
+          <N to="/crm/contacts" icon={Users}     label="Контакты" active={active('/crm/contacts')} c={navCollapsed} onClick={settle} />
+          <N to="/crm/companies" icon={Building2} label="Компании" active={active('/crm/companies')} c={navCollapsed} onClick={settle} />
+          <N to="/crm/leads"    icon={Target}    label="Лиды"     active={active('/crm/leads')}    c={navCollapsed} onClick={settle} />
 
-          {/* Sales */}
-          <NavGroup
-            label="Продажи"
-            sectionKey="sales"
-            expanded={expandedSections.sales}
-            collapsed={navCollapsed}
-            onToggle={() => toggleSection('sales')}
-            active={
-              !!currentOrganization &&
-              location.pathname === `/organizations/${currentOrganization.id}`
-            }
-          >
-            {currentOrganization && (
-              <NavLink
-                to={`/organizations/${currentOrganization.id}`}
-                icon={Zap}
-                label="Воронки"
-                active={location.pathname === `/organizations/${currentOrganization.id}`}
-                collapsed={navCollapsed}
-                onClick={settle}
-                indent
-              />
-            )}
-            <NavLink
-              to="/favorite-pipelines"
-              icon={TrendingUp}
-              label="Избранные"
-              active={location.pathname === '/favorite-pipelines'}
-              collapsed={navCollapsed}
-              onClick={settle}
-              indent
-            />
-          </NavGroup>
+          <div className={styles.section}>
+            <span className={styles.sectionLabel}>Продажи</span>
+          </div>
+          {currentOrg && (
+            <N to={`/organizations/${currentOrg.id}`} icon={Zap} label="Воронки" active={location.pathname === `/organizations/${currentOrg.id}`} c={navCollapsed} onClick={settle} />
+          )}
+          <N to="/favorite-pipelines" icon={TrendingUp} label="Избранные" active={active('/favorite-pipelines')} c={navCollapsed} onClick={settle} />
 
-          {/* Catalog */}
-          <NavGroup
-            label="Каталог"
-            sectionKey="catalog"
-            expanded={expandedSections.catalog}
-            collapsed={navCollapsed}
-            onToggle={() => toggleSection('catalog')}
-            active={isActive('/catalog')}
-          >
-            <NavLink
-              to="/catalog/products"
-              icon={Package}
-              label="Товары"
-              active={isActive('/catalog/products')}
-              collapsed={navCollapsed}
-              onClick={settle}
-              indent
-            />
-            <NavLink
-              to="/catalog/services"
-              icon={Briefcase}
-              label="Услуги"
-              active={isActive('/catalog/services')}
-              collapsed={navCollapsed}
-              onClick={settle}
-              indent
-            />
-          </NavGroup>
-
-          {/* Finance */}
-          <NavLink
-            to="/finance"
-            icon={CircleDollarSign}
-            label="Финансы"
-            active={isActive('/finance')}
-            collapsed={navCollapsed}
-            onClick={settle}
-          />
-
-          {/* Projects */}
-          <NavLink
-            to="/projects"
-            icon={FolderKanban}
-            label="Проекты"
-            active={isActive('/projects')}
-            collapsed={navCollapsed}
-            onClick={settle}
-          />
-
-          {/* AI */}
-          <NavLink
-            to="/ai"
-            icon={Bot}
-            label="Meridian AI"
-            active={isActive('/ai')}
-            collapsed={navCollapsed}
-            onClick={settle}
-            badge="Beta"
-          />
-
-          {/* Reports */}
-          <NavLink
-            to="/reports"
-            icon={BookOpen}
-            label="Отчеты"
-            active={isActive('/reports')}
-            collapsed={navCollapsed}
-            onClick={settle}
-          />
+          <div className={styles.section}>
+            <span className={styles.sectionLabel}>Каталог</span>
+          </div>
+          <N to="/catalog/products" icon={Package}   label="Товары"  active={active('/catalog/products')} c={navCollapsed} onClick={settle} />
+          <N to="/catalog/services" icon={Briefcase} label="Услуги"  active={active('/catalog/services')} c={navCollapsed} onClick={settle} />
 
           <div className={styles.divider} />
 
-          {/* Organization */}
-          <NavGroup
-            label="Организация"
-            sectionKey="organization"
-            expanded={expandedSections.organization}
-            collapsed={navCollapsed}
-            onToggle={() => toggleSection('organization')}
-            active={isActive('/organizations') || isActive('/profile')}
-          >
-            {currentOrganization && canManage && !currentOrganization.isPersonal && (
-              <NavLink
-                to={`/organizations/${currentOrganization.id}/users`}
-                icon={Users}
-                label="Участники"
-                active={isActive(`/organizations/${currentOrganization.id}/users`)}
-                collapsed={navCollapsed}
-                onClick={settle}
-                indent
-              />
-            )}
-            {currentOrganization && canViewOrgAnalytics && (
-              <NavLink
-                to={`/organizations/${currentOrganization.id}/analytics`}
-                icon={BarChart3}
-                label="Аналитика"
-                active={isActive(`/organizations/${currentOrganization.id}/analytics`)}
-                collapsed={navCollapsed}
-                onClick={settle}
-                indent
-              />
-            )}
-            {currentOrganization && canManage && (
-              <NavLink
-                to={`/organizations/${currentOrganization.id}/settings`}
-                icon={Settings}
-                label="Настройки"
-                active={isActive(`/organizations/${currentOrganization.id}/settings`)}
-                collapsed={navCollapsed}
-                onClick={settle}
-                indent
-              />
-            )}
-          </NavGroup>
+          <N to="/finance"  icon={CircleDollarSign} label="Финансы"  active={active('/finance')}  c={navCollapsed} onClick={settle} />
+          <N to="/projects" icon={FolderKanban}     label="Проекты"  active={active('/projects')} c={navCollapsed} onClick={settle} />
+          <N to="/ai"       icon={Bot}              label="AI"       active={active('/ai')}       c={navCollapsed} onClick={settle} badge="AI" />
+          <N to="/reports"  icon={BarChart3}        label="Отчёты"   active={active('/reports')}  c={navCollapsed} onClick={settle} />
+
+          {(canManage || canViewOrgAnalytics) && currentOrg && (
+            <>
+              <div className={styles.divider} />
+              {canManage && !currentOrg.isPersonal && (
+                <N to={`/organizations/${currentOrg.id}/users`}    icon={Users}    label="Участники" active={active(`/organizations/${currentOrg.id}/users`)}    c={navCollapsed} onClick={settle} />
+              )}
+              {canViewOrgAnalytics && (
+                <N to={`/organizations/${currentOrg.id}/analytics`} icon={BarChart3} label="Аналитика" active={active(`/organizations/${currentOrg.id}/analytics`)} c={navCollapsed} onClick={settle} />
+              )}
+              {canManage && (
+                <N to={`/organizations/${currentOrg.id}/settings`}  icon={Settings}  label="Настройки" active={active(`/organizations/${currentOrg.id}/settings`)}  c={navCollapsed} onClick={settle} />
+              )}
+            </>
+          )}
 
           {currentUser?.systemRole === 'root' && (
-            <NavLink
-              to="/admin"
-              icon={Shield}
-              label="Администрирование"
-              active={isActive('/admin')}
-              collapsed={navCollapsed}
-              onClick={settle}
-              variant="admin"
-            />
+            <N to="/admin" icon={Shield} label="Админ" active={active('/admin')} c={navCollapsed} onClick={settle} variant="admin" />
           )}
         </div>
 
-        {/* ── User footer ──────────────────────────── */}
-        <div className={styles.userFooter}>
-          {currentUser && (
-            <Link
-              to="/profile"
-              className={cn(styles.userCard, isActive('/profile') && styles.userCardActive)}
-              onClick={settle}
-              title={navCollapsed
-                ? `${currentUser.firstname} ${currentUser.lastname ?? ''} — профиль`
-                : undefined
-              }
-            >
-              <div className={styles.userAvatar} aria-hidden>
-                {currentUser.firstname?.[0]?.toUpperCase() || 'U'}
-              </div>
-              <div className={styles.userInfo}>
-                <span className={styles.userName}>
-                  {currentUser.firstname} {currentUser.lastname}
-                </span>
-                <span className={styles.userEmail}>{currentUser.email}</span>
-              </div>
-            </Link>
-          )}
+        {/* ── Footer: logout only ───────────────────────── */}
+        <div className={styles.footer}>
+          <button
+            type="button"
+            className={styles.logoutBtn}
+            onClick={handleLogout}
+            title="Выйти"
+            aria-label="Выйти"
+          >
+            <LogOut size={14} strokeWidth={1.75} />
+            <span className={styles.logoutLabel}>Выйти</span>
+          </button>
         </div>
       </nav>
     </aside>
   )
 }
 
-/* ── Sub-components ─────────────────────────────────────── */
-
-type NavLinkProps = {
+/* ── NavItem ─────────────────────────────────────────────── */
+type NProps = {
   to: string
   icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
   label: string
   active: boolean
-  collapsed: boolean
+  c: boolean
   onClick?: () => void
-  indent?: boolean
   badge?: string
-  variant?: 'default' | 'admin'
+  variant?: 'admin'
 }
 
-function NavLink({ to, icon: Icon, label, active, collapsed, onClick, indent, badge, variant }: NavLinkProps) {
+function N({ to, icon: Icon, label, active, c, onClick, badge, variant }: NProps) {
   return (
     <Link
       to={to}
       onClick={onClick}
-      title={collapsed ? label : undefined}
-      className={cn(
-        styles.navItem,
-        active && styles.navItemActive,
-        indent && styles.navItemIndent,
-        variant === 'admin' && styles.navItemAdmin,
-      )}
+      title={c ? label : undefined}
       aria-current={active ? 'page' : undefined}
+      className={cn(
+        styles.item,
+        active && styles.itemActive,
+        variant === 'admin' && styles.itemAdmin,
+      )}
     >
-      <Icon size={iconSize} strokeWidth={iconStroke} />
-      <span className={styles.navItemLabel}>{label}</span>
-      {badge && !collapsed && <span className={styles.navBadge}>{badge}</span>}
+      <Icon size={SZ} strokeWidth={SW} />
+      <span className={styles.itemLabel}>{label}</span>
+      {badge && !c && <span className={styles.badge}>{badge}</span>}
     </Link>
-  )
-}
-
-type NavGroupProps = {
-  label: string
-  sectionKey: string
-  expanded: boolean
-  collapsed: boolean
-  onToggle: () => void
-  active?: boolean
-  children: React.ReactNode
-}
-
-function NavGroup({ label, sectionKey, expanded, collapsed, onToggle, active, children }: NavGroupProps) {
-  if (collapsed) {
-    return <>{children}</>
-  }
-  return (
-    <div className={styles.navGroup}>
-      <button
-        type="button"
-        className={cn(styles.navGroupTrigger, active && !expanded && styles.navGroupTriggerActive)}
-        onClick={onToggle}
-        aria-expanded={expanded}
-      >
-        <span className={styles.navGroupLabel}>{label}</span>
-        <ChevronRight
-          size={12}
-          strokeWidth={2}
-          className={cn(styles.navGroupChevron, expanded && styles.navGroupChevronOpen)}
-          aria-hidden
-        />
-      </button>
-      {expanded && <div className={styles.navGroupChildren}>{children}</div>}
-    </div>
   )
 }

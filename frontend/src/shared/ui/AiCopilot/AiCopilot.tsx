@@ -1,27 +1,51 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Bot, Send, X } from 'lucide-react'
-import { buildAiContext, matchIntent, TEMPLATES } from 'shared/lib/ai'
+import { Bot, Send, X, Sparkles, Loader2, Wifi, WifiOff } from 'lucide-react'
+import { buildAiContext } from 'shared/lib/ai'
 import { streamInto } from 'shared/lib/ai'
+import { aiAPI } from 'shared/api/requests/ai'
 import { organizationModel } from 'entities/organization'
 import styles from './AiCopilot.module.css'
 
-type Message = { role: 'user' | 'ai'; text: string }
+type Source = 'deepseek' | 'local'
+type Message = { role: 'user' | 'ai'; text: string; source?: Source }
 
 const QUICK_CHIPS = [
-  { label: 'Оцени лиды', prompt: 'Какие лиды под угрозой срыва?' },
-  { label: 'Напиши письмо', prompt: 'Написать письмо клиенту' },
-  { label: 'Прогноз продаж', prompt: 'Прогноз продаж на квартал' },
-  { label: 'Найди риски', prompt: 'Риски оттока клиентов' },
+  { label: '🎯 Оцени лиды', prompt: 'Какие лиды под угрозой срыва?' },
+  { label: '✉️ Напиши письмо', prompt: 'Написать письмо клиенту с предложением о встрече' },
+  { label: '📈 Прогноз продаж', prompt: 'Прогноз продаж на следующий квартал' },
+  { label: '⚠️ Найди риски', prompt: 'Риски оттока клиентов' },
 ]
 
-function TypingDots() {
+function SourceTag({ source }: { source?: Source }) {
+  if (!source) return null
+  if (source === 'deepseek') {
+    return (
+      <span className={styles.sourceTag} style={{ color: '#10b981', background: 'color-mix(in srgb, #10b981 10%, var(--color-bg))' }}>
+        <Sparkles size={9} /> DeepSeek
+      </span>
+    )
+  }
+  return (
+    <span className={styles.sourceTag} style={{ color: '#6b7280', background: 'color-mix(in srgb, #6b7280 10%, var(--color-bg))' }}>
+      <Wifi size={9} /> Локальный AI
+    </span>
+  )
+}
+
+function TypingIndicator({ model }: { model: string }) {
   return (
     <div className={styles.msgRow}>
       <div className={`${styles.msgAvatar} ${styles.msgAvatarAi}`}>✦</div>
       <div className={styles.typingBubble}>
-        <span className={styles.typingDot} />
-        <span className={styles.typingDot} />
-        <span className={styles.typingDot} />
+        <div className={styles.typingLabel}>
+          <Loader2 size={10} className={styles.spinner} />
+          Запрос к {model}...
+        </div>
+        <div className={styles.typingDots}>
+          <span className={styles.typingDot} />
+          <span className={styles.typingDot} />
+          <span className={styles.typingDot} />
+        </div>
       </div>
     </div>
   )
@@ -32,49 +56,77 @@ export function AiCopilot() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [aiModel, setAiModel] = useState('DeepSeek')
+  const [isOnline, setIsOnline] = useState<boolean | null>(null)
   const cancelRef = useRef<(() => void) | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const org = organizationModel.selectors.useCurrentOrganization()
   const ctx = buildAiContext(org?.id)
 
+  // Check AI status on open
+  useEffect(() => {
+    if (!open || isOnline !== null) return
+    aiAPI.getStatus().then((status) => {
+      setIsOnline(status.available)
+      setAiModel(status.available ? status.model : 'Локальный AI')
+    }).catch(() => setIsOnline(false))
+  }, [open, isOnline])
+
   const scrollBottom = useCallback(() => {
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 40)
   }, [])
 
-  const sendMessage = useCallback((text: string) => {
+  const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isTyping) return
-    setMessages((prev) => [...prev, { role: 'user', text: text.trim() }])
+    const userText = text.trim()
+
+    setMessages((prev) => [...prev, { role: 'user', text: userText }])
     setInput('')
     setIsTyping(true)
     scrollBottom()
 
-    const intent = matchIntent(text)
-    const fullResponse = TEMPLATES[intent](ctx)
-    // Use first 300 chars in compact copilot
-    const response = fullResponse.slice(0, 320)
+    const history = messages.map((m) => ({
+      role: m.role === 'ai' ? 'assistant' as const : 'user' as const,
+      content: m.text,
+    }))
+    history.push({ role: 'user', content: userText })
 
-    setTimeout(() => {
+    const systemPrompt = `Ты CRM-ассистент PulsarCRM. Контекст: ${JSON.stringify(ctx)}.
+Отвечай кратко (3-5 предложений), на русском, по делу. Помогаешь менеджерам по продажам.`
+
+    try {
+      const { content, source } = await aiAPI.chat(history, systemPrompt)
       setIsTyping(false)
-      setMessages((prev) => [...prev, { role: 'ai', text: '' }])
+
+      if (source === 'deepseek') setIsOnline(true)
+
+      setMessages((prev) => [...prev, { role: 'ai', text: '', source }])
       scrollBottom()
 
       cancelRef.current = streamInto(
-        response,
+        content,
         (partial) => {
           setMessages((prev) => {
             const updated = [...prev]
-            updated[updated.length - 1] = { role: 'ai', text: partial }
+            updated[updated.length - 1] = { role: 'ai', text: partial, source }
             return updated
           })
           scrollBottom()
         },
       )
-    }, 700 + Math.random() * 400)
-  }, [isTyping, ctx, scrollBottom])
+    } catch {
+      setIsTyping(false)
+      setIsOnline(false)
+      setMessages((prev) => [
+        ...prev,
+        { role: 'ai', text: 'Сервис временно недоступен. Пополните баланс DeepSeek или проверьте подключение.', source: 'local' },
+      ])
+      scrollBottom()
+    }
+  }, [isTyping, messages, ctx, scrollBottom])
 
   useEffect(() => () => { cancelRef.current?.() }, [])
 
-  // Keyboard shortcut: Cmd+/ toggles copilot
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === '/') {
@@ -88,7 +140,6 @@ export function AiCopilot() {
 
   return (
     <>
-      {/* Panel */}
       {open && (
         <div className={styles.panel}>
           <div className={styles.panelHeader}>
@@ -96,9 +147,12 @@ export function AiCopilot() {
             <div className={styles.panelHeaderMeta}>
               <div className={styles.panelHeaderTitle}>
                 Meridian AI
-                <span className={styles.panelOnline} />
+                {isOnline === true && <span className={styles.panelOnline} title="DeepSeek подключён" />}
+                {isOnline === false && <span className={styles.panelOffline} title="Локальный режим" />}
               </div>
-              <div className={styles.panelHeaderSub}>CRM-ассистент · всегда доступен</div>
+              <div className={styles.panelHeaderSub}>
+                {isOnline === null ? 'Проверка подключения...' : isOnline ? `${aiModel} · онлайн` : 'Локальный режим'}
+              </div>
             </div>
             <button
               type="button"
@@ -110,32 +164,32 @@ export function AiCopilot() {
             </button>
           </div>
 
-          {/* Quick chips */}
+          {isOnline === false && (
+            <div className={styles.offlineBanner}>
+              <WifiOff size={11} />
+              Пополните баланс DeepSeek — сейчас работает локальный AI
+            </div>
+          )}
+
           <div className={styles.chips}>
             {QUICK_CHIPS.map((chip) => (
               <button
                 key={chip.label}
                 type="button"
                 className={styles.chip}
-                onClick={() => sendMessage(chip.prompt)}
+                onClick={() => { void sendMessage(chip.prompt) }}
               >
                 {chip.label}
               </button>
             ))}
           </div>
 
-          {/* Chat area */}
           <div className={styles.chatArea}>
             {messages.length === 0 && (
-              <div
-                style={{
-                  padding: '16px 8px',
-                  textAlign: 'center',
-                  color: 'var(--color-text-tertiary)',
-                  fontSize: 13,
-                }}
-              >
-                Задайте вопрос о ваших лидах, сделках и клиентах
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>✦</div>
+                <p>Задайте вопрос о ваших лидах, сделках и клиентах</p>
+                <span className={styles.shortcut}>⌘ + / для открытия</span>
               </div>
             )}
             {messages.map((msg, i) => (
@@ -150,23 +204,27 @@ export function AiCopilot() {
                 >
                   {msg.role === 'ai' ? '✦' : '?'}
                 </div>
-                <div
-                  className={`${styles.msgBubble} ${
-                    msg.role === 'ai' ? styles.msgBubbleAi : styles.msgBubbleUser
-                  }`}
-                >
-                  {msg.text}
-                  {msg.role === 'ai' && i === messages.length - 1 && !isTyping && (
-                    <span className={styles.cursor} />
+                <div className={styles.msgGroup}>
+                  <div
+                    className={`${styles.msgBubble} ${
+                      msg.role === 'ai' ? styles.msgBubbleAi : styles.msgBubbleUser
+                    }`}
+                  >
+                    {msg.text}
+                    {msg.role === 'ai' && i === messages.length - 1 && !isTyping && (
+                      <span className={styles.cursor} />
+                    )}
+                  </div>
+                  {msg.role === 'ai' && msg.text && (
+                    <SourceTag source={msg.source} />
                   )}
                 </div>
               </div>
             ))}
-            {isTyping && <TypingDots />}
+            {isTyping && <TypingIndicator model={aiModel} />}
             <div ref={bottomRef} />
           </div>
 
-          {/* Input */}
           <div className={styles.inputRow}>
             <textarea
               className={styles.input}
@@ -177,7 +235,7 @@ export function AiCopilot() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
-                  sendMessage(input)
+                  void sendMessage(input)
                 }
               }}
             />
@@ -185,15 +243,14 @@ export function AiCopilot() {
               type="button"
               className={styles.sendBtn}
               disabled={!input.trim() || isTyping}
-              onClick={() => sendMessage(input)}
+              onClick={() => { void sendMessage(input) }}
             >
-              <Send size={13} />
+              {isTyping ? <Loader2 size={13} className={styles.spinner} /> : <Send size={13} />}
             </button>
           </div>
         </div>
       )}
 
-      {/* Trigger button */}
       <button
         type="button"
         className={`${styles.trigger} ${open ? styles.open : ''}`}

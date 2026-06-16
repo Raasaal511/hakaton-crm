@@ -13,10 +13,11 @@ import styles from './ServicesPage.module.css'
 
 const SERVICE_COLORS = ['#7c3aed', '#0f766e', '#0369a1', '#d97706', '#dc2626', '#0ea5e9']
 
-type ServiceRow = CatalogService & { id: string; numericId: number }
+type ServiceRow = Omit<CatalogService, 'id'> & { id: string; numericId: number }
 
 function adaptRow(s: CatalogService): ServiceRow {
-  return { ...s, id: String(s.id), numericId: s.id }
+  const { id, ...rest } = s
+  return { ...rest, id: String(id), numericId: id }
 }
 
 function ServiceGridCard({ service }: { service: CatalogService }) {

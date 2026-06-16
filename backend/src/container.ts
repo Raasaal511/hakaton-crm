@@ -49,6 +49,8 @@ import { CrmController } from './modules/crm/crm.controller.js'
 import { CatalogRepository } from './modules/catalog/catalog.repository.js'
 import { CatalogService } from './modules/catalog/catalog.service.js'
 import { CatalogController } from './modules/catalog/catalog.controller.js'
+import { AiService } from './modules/ai/ai.service.js'
+import { AiController } from './modules/ai/ai.controller.js'
 
 const container = new Container()
 
@@ -112,5 +114,8 @@ container.bind(TYPES.CrmController).to(CrmController)
 container.bind(TYPES.CatalogRepository).to(CatalogRepository)
 container.bind(TYPES.CatalogService).to(CatalogService)
 container.bind(TYPES.CatalogController).to(CatalogController)
+
+container.bind(TYPES.AiService).to(AiService).inSingletonScope()
+container.bind(TYPES.AiController).to(AiController)
 
 export { container }

@@ -36,6 +36,11 @@ export const qk = {
   crmCommunications: (orgId: number, type: string, id: number) => ['crm', orgId, 'communications', type, id] as const,
   crmAutomationRules: (orgId: number) => ['crm', orgId, 'automation-rules'] as const,
   crmActivity: (orgId: number, type: string, id: number) => ['crm', orgId, 'activity', type, id] as const,
+  // Finance / Sales
+  financeQuotes: (orgId: number) => ['finance', orgId, 'quotes'] as const,
+  financeInvoices: (orgId: number) => ['finance', orgId, 'invoices'] as const,
+  // Activity feed
+  crmRecentActivity: (orgId: number) => ['crm', orgId, 'activity', 'recent'] as const,
   // Catalog
   catalogCategories: (orgId: number) => ['catalog', orgId, 'categories'] as const,
   catalogProducts: (orgId: number, filter?: object) => ['catalog', orgId, 'products', filter] as const,

@@ -12,10 +12,11 @@ import { qk } from 'shared/api/queryKeys'
 import { ProductForm } from 'features/catalog/ProductForm'
 import styles from './ProductsPage.module.css'
 
-type ProductRow = Product & { id: string; numericId: number }
+type ProductRow = Omit<Product, 'id'> & { id: string; numericId: number }
 
 function adaptRow(p: Product): ProductRow {
-  return { ...p, id: String(p.id), numericId: p.id }
+  const { id, ...rest } = p
+  return { ...rest, id: String(id), numericId: id }
 }
 
 const ICON_COLOR = '#7c3aed'

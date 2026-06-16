@@ -21,6 +21,8 @@ import { crmAPI, type CrmContact as ApiContact } from 'shared/api/requests/crm'
 import { qk } from 'shared/api/queryKeys'
 import { formatRubles } from 'shared/lib/crmDemoData'
 import { ContactForm } from 'features/crm/ContactForm'
+import { ContactImportModal } from 'features/crm/ContactImportModal'
+import { LogCommunicationModal, type CommChannel } from 'features/crm/LogCommunicationModal'
 import styles from './ContactsPage.module.css'
 
 type ContactStatus = 'active' | 'inactive' | 'prospect'
@@ -99,6 +101,39 @@ export function ContactsPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc' | null>('asc')
   const [formOpen, setFormOpen] = useState(false)
   const [editContact, setEditContact] = useState<ApiContact | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [commChannel, setCommChannel] = useState<CommChannel | null>(null)
+
+  async function handleExport() {
+    if (!currentOrganization?.id) return
+    setExporting(true)
+    try {
+      const all = await crmAPI.getContacts(currentOrganization.id, {
+        q: search || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        limit: 5000,
+        offset: 0,
+      })
+      const rows = all.items
+      const header = 'firstName,lastName,email,phone,position,status'
+      const body = rows.map((c) =>
+        [c.firstName, c.lastName ?? '', c.email ?? '', c.phone ?? '', c.position ?? '', c.status]
+          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+          .join(',')
+      ).join('\n')
+      const csv = `${header}\n${body}`
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `contacts_${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const filter = {
     q: search || undefined,
@@ -205,7 +240,23 @@ export function ContactsPage() {
       id: 'export',
       label: 'Экспорт',
       icon: <Download size={13} />,
-      onClick: (ids: string[]) => console.log('export', ids),
+      onClick: (ids: string[]) => {
+        const selected = (data?.items ?? []).filter((c) => ids.includes(String(c.id)))
+        if (selected.length === 0) return
+        const header = 'firstName,lastName,email,phone,position,status'
+        const body = selected.map((c) =>
+          [c.firstName, c.lastName ?? '', c.email ?? '', c.phone ?? '', c.position ?? '', c.status]
+            .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+            .join(',')
+        ).join('\n')
+        const blob = new Blob([`${header}\n${body}`], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `contacts_selected_${new Date().toISOString().slice(0, 10)}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+      },
     },
     {
       id: 'delete',
@@ -234,11 +285,11 @@ export function ContactsPage() {
           breadcrumb={[{ label: 'CRM' }]}
           actions={
             <>
-              <Button variant="secondary" size="sm" iconLeft={<Upload size={13} />}>
+              <Button variant="secondary" size="sm" iconLeft={<Upload size={13} />} onClick={() => setImportOpen(true)}>
                 Импорт
               </Button>
-              <Button variant="secondary" size="sm" iconLeft={<Download size={13} />}>
-                Экспорт
+              <Button variant="secondary" size="sm" iconLeft={<Download size={13} />} onClick={handleExport} disabled={exporting}>
+                {exporting ? 'Экспорт...' : 'Экспорт'}
               </Button>
               <Button variant="primary" size="sm" iconLeft={<Plus size={13} />} onClick={() => { setEditContact(null); setFormOpen(true) }}>
                 Добавить контакт
@@ -351,10 +402,10 @@ export function ContactsPage() {
               </div>
 
               <div className={styles.panelActions}>
-                <Button variant="primary" size="sm" iconLeft={<Mail size={13} />} fullWidth>
+                <Button variant="primary" size="sm" iconLeft={<Mail size={13} />} fullWidth onClick={() => setCommChannel('email')}>
                   Написать
                 </Button>
-                <Button variant="secondary" size="sm" iconLeft={<Phone size={13} />} fullWidth>
+                <Button variant="secondary" size="sm" iconLeft={<Phone size={13} />} fullWidth onClick={() => setCommChannel('phone')}>
                   Позвонить
                 </Button>
               </div>
@@ -372,6 +423,18 @@ export function ContactsPage() {
           onClose={() => { setFormOpen(false); setEditContact(null) }}
           existing={editContact}
         />
+
+        <ContactImportModal open={importOpen} onClose={() => setImportOpen(false)} />
+
+        {panelContact && (
+          <LogCommunicationModal
+            open={commChannel !== null}
+            channel={commChannel ?? 'email'}
+            defaultContactId={Number(panelContact.id)}
+            defaultContactName={panelContact.name}
+            onClose={() => setCommChannel(null)}
+          />
+        )}
       </div>
     </AppLayout>
   )

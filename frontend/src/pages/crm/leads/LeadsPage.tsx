@@ -10,6 +10,7 @@ import {
   ArrowRight,
   TrendingUp,
   Sparkles,
+  Loader2,
 } from 'lucide-react'
 import { AppLayout, Button } from 'shared/ui'
 import { PageHeader } from 'shared/ui/PageHeader/PageHeader'
@@ -20,15 +21,8 @@ import { crmAPI, type CrmLead } from 'shared/api/requests/crm'
 import { qk } from 'shared/api/queryKeys'
 import { LEAD_STAGE_LABELS, LEAD_STAGE_COLORS, PRIORITY_COLORS, formatRubles } from 'shared/lib/crmDemoData'
 import { LeadForm } from 'features/crm/LeadForm'
+import { useLeadScore } from 'features/realtime/useLeadScore'
 import styles from './LeadsPage.module.css'
-
-function calcLeadScore(lead: CrmLead): number {
-  const probPart = lead.probability * 0.4
-  const amtPart = Math.min((lead.amount / 500_000) * 30, 30)
-  const priorityPart: Record<string, number> = { high: 20, medium: 12, low: 5 }
-  const sourcePart = lead.source ? 10 : 0
-  return Math.round(Math.min(probPart + amtPart + (priorityPart[lead.priority] ?? 10) + sourcePart, 100))
-}
 
 function scoreColor(score: number): string {
   if (score >= 70) return '#10b981'
@@ -36,30 +30,39 @@ function scoreColor(score: number): string {
   return '#ef4444'
 }
 
-function AiScoreBadge({ score }: { score: number }) {
+function AiScoreBadge({ lead }: { lead: CrmLead }) {
+  const { data, isLoading } = useLeadScore(lead)
   const [displayed, setDisplayed] = useState(0)
+  const score = data?.score ?? 0
   const color = scoreColor(score)
+  const isDeepSeek = data?.source === 'deepseek'
 
   useEffect(() => {
+    if (!score) return
     let start = 0
     const step = Math.ceil(score / 20)
     const timer = setInterval(() => {
       start += step
-      if (start >= score) {
-        setDisplayed(score)
-        clearInterval(timer)
-      } else {
-        setDisplayed(start)
-      }
+      if (start >= score) { setDisplayed(score); clearInterval(timer) }
+      else setDisplayed(start)
     }, 30)
     return () => clearInterval(timer)
   }, [score])
+
+  if (isLoading) {
+    return (
+      <span className={styles.aiScoreBadge} style={{ color: '#6b7280', background: 'var(--color-bg-secondary)', borderColor: 'var(--color-border)' }}>
+        <Loader2 size={9} style={{ animation: 'spin 1s linear infinite' }} />
+        AI
+      </span>
+    )
+  }
 
   return (
     <span
       className={styles.aiScoreBadge}
       style={{ color, background: `color-mix(in srgb, ${color} 12%, var(--color-bg))`, borderColor: `color-mix(in srgb, ${color} 25%, transparent)` }}
-      title={`AI Score: ${score}`}
+      title={`AI Score: ${score}${isDeepSeek ? ' (DeepSeek)' : ' (local)'}\n${data?.summary ?? ''}`}
     >
       <Sparkles size={9} />
       {displayed}
@@ -79,13 +82,12 @@ const PRIORITY_LABELS: Record<string, string> = {
 function KanbanCard({ lead }: { lead: CrmLead }) {
   const stageColor = LEAD_STAGE_COLORS[lead.stage as keyof typeof LEAD_STAGE_COLORS] ?? '#6b7280'
   const priorityColor = PRIORITY_COLORS[lead.priority as keyof typeof PRIORITY_COLORS] ?? '#6b7280'
-  const score = calcLeadScore(lead)
   return (
     <div className={styles.kanbanCard}>
       <div className={styles.kanbanCardTop}>
         <span className={styles.kanbanCardTitle}>{lead.title}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <AiScoreBadge score={score} />
+          <AiScoreBadge lead={lead} />
           <span
             className={styles.priorityDot}
             style={{ background: priorityColor }}
@@ -245,7 +247,7 @@ export function LeadsPage() {
       renderCell: (row) => {
         const lead = filtered.find((l) => String(l.id) === row.id)
         if (!lead) return null
-        return <AiScoreBadge score={calcLeadScore(lead)} />
+        return <AiScoreBadge lead={lead} />
       },
     },
   ]

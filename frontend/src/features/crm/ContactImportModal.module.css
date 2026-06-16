@@ -1,0 +1,103 @@
+/* ── Drop zone ── */
+.dropZone {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: var(--color-page-bg);
+  text-align: center;
+}
+.dropZone:hover { border-color: var(--color-accent); background: var(--color-accent-light, rgba(99,102,241,0.04)); }
+.dragging        { border-color: var(--color-accent); background: var(--color-accent-light, rgba(99,102,241,0.08)); }
+.hiddenInput     { display: none; }
+.dropIcon        { color: var(--color-text-tertiary); margin-bottom: 4px; }
+.dropTitle       { font-size: 0.875rem; font-weight: 600; color: var(--color-text); margin: 0; }
+.dropSub         { font-size: 0.75rem; color: var(--color-text-secondary); margin: 0; }
+
+/* ── Template hint ── */
+.templateHint {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.75rem; color: var(--color-text-secondary);
+}
+.templateLink {
+  background: none; border: none; cursor: pointer;
+  color: var(--color-accent); font-size: 0.75rem; text-decoration: underline;
+  padding: 0;
+}
+
+/* ── Format info ── */
+.formatInfo {
+  background: var(--color-page-bg); border: 1px solid var(--color-border);
+  border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;
+}
+.formatTitle { font-size: 11px; font-weight: 600; color: var(--color-text-secondary); margin: 0; }
+.formatCode  {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  color: var(--color-accent); background: var(--color-accent-light, rgba(99,102,241,0.08));
+  padding: 6px 8px; border-radius: 4px; display: block;
+}
+.formatNote  { font-size: 11px; color: var(--color-text-tertiary); margin: 0; }
+
+/* ── Errors / Warnings ── */
+.errorBox {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; border-radius: 8px;
+  background: #fee2e2; color: #dc2626; font-size: 0.8125rem;
+}
+.warnBox {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; border-radius: 8px;
+  background: #fef3c7; color: #d97706; font-size: 0.8125rem;
+}
+
+/* ── Preview ── */
+.previewHeader {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.8125rem; color: var(--color-text-secondary);
+  padding: 8px 12px; background: var(--color-page-bg);
+  border-radius: 8px; border: 1px solid var(--color-border);
+}
+.previewFile  { font-weight: 600; color: var(--color-text); flex: 1; }
+.previewCount {
+  font-size: 11px; font-weight: 600; padding: 2px 8px;
+  border-radius: 20px; background: var(--color-accent-light, rgba(99,102,241,0.12));
+  color: var(--color-accent);
+}
+
+.previewTableWrap {
+  border: 1px solid var(--color-border); border-radius: 8px; overflow: auto; max-height: 280px;
+}
+.previewTable { width: 100%; border-collapse: collapse; font-size: 12px; }
+.previewTable th {
+  padding: 8px 10px; background: var(--color-page-bg);
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--color-text-secondary);
+  text-align: left; border-bottom: 1px solid var(--color-border);
+  position: sticky; top: 0; z-index: 1;
+}
+.previewTable td {
+  padding: 7px 10px; border-bottom: 1px solid var(--color-border);
+  color: var(--color-text); white-space: nowrap;
+}
+.previewTable tbody tr:last-child td { border-bottom: none; }
+.previewTable tbody tr:hover { background: var(--color-bg-secondary); }
+.invalidRow { background: #fff5f5 !important; }
+.missing    { color: var(--color-text-tertiary); font-style: italic; }
+.previewMore {
+  padding: 8px 12px; font-size: 11px; color: var(--color-text-secondary);
+  text-align: center; border-top: 1px solid var(--color-border);
+}
+
+/* ── Done ── */
+.doneWrap  {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 2.5rem 1.5rem; gap: 12px; text-align: center;
+}
+.doneIcon  { color: var(--color-success); }
+.doneTitle { font-size: 1.125rem; font-weight: 700; color: var(--color-text); margin: 0; }
+.doneSub   { font-size: 0.875rem; color: var(--color-text-secondary); margin: 0; }
